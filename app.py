@@ -1,6 +1,8 @@
 import sys
 import os
 import time
+import io
+import base64
 
 from flask import Flask, render_template, redirect, url_for, session, request, flash, jsonify, send_file, send_from_directory
 import pandas as pd
@@ -8,8 +10,8 @@ from config import Config
 from model import SolarModel, load_model
 from utils import get_image, predict_image, save_prediction
 from datetime import datetime
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 def resource_path(relative_path):
     """Get absolute path to resources for both dev and packaged mode"""
@@ -24,29 +26,6 @@ app = Flask(__name__,
             template_folder=resource_path('templates'),
             static_folder=resource_path('static'))
 app.secret_key = os.urandom(24)  # Secure key for sessions and flash messages
-
-images_dir = resource_path(os.path.join('static', 'images'))
-os.makedirs(images_dir, exist_ok=True)  
-
-def cleanup_old_images(max_age_hours=24):
-    """Delete images in static/images/ older than max_age_hours."""
-    try:
-        current_time = time.time()
-        max_age_seconds = max_age_hours * 3600
-        deleted_count = 0
-        for filename in os.listdir(images_dir):
-            file_path = os.path.join(images_dir, filename)
-            if os.path.isfile(file_path):
-                file_age = current_time - os.path.getmtime(file_path)
-                if file_age > max_age_seconds:
-                    os.remove(file_path)
-                    deleted_count += 1
-        if deleted_count > 0:
-            print(f"Cleaned up {deleted_count} old images from {images_dir}")
-        return deleted_count
-    except Exception as e:
-        print(f"Error cleaning up images: {str(e)}")
-        return 0
 
 # Load configuration and model
 cfg = Config()
@@ -152,29 +131,23 @@ else:
             if image is None:
                 flash('Failed to fetch satellite image.', 'error')
                 return render_template('prediction.html', lat=lat, lon=lon)
-            print(f"Image type from get_image: {type(image)}")  # Debug
             # Ensure image is a numpy array for predict_image
             if not isinstance(image, np.ndarray):
                 flash('Unsupported image format from get_image.', 'error')
                 return render_template('prediction.html', lat=lat, lon=lon)
-            # Save a copy as PIL Image for display
+            # Convert image to base64 for display
             image_pil = Image.fromarray(image.astype('uint8'))
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            image_filename = f'image_{timestamp}.jpg'
-            image_path = os.path.join(images_dir, image_filename)
-            image_pil.save(image_path, 'JPEG')
-            print(f"Image saved: {image_path}")  # Debug
-            # Clean up old images
-            cleanup_old_images(max_age_hours=24)
-            # Use original numpy array for prediction
+            buffered = io.BytesIO()
+            image_pil.save(buffered, format="JPEG")
+            image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            # Make prediction
             label, confidence = predict_image(image, model)
             save_prediction(lat, lon, label, confidence, cfg.predictions_file)
             flash('Prediction successful!', 'success')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
                     'status': 'success',
-                    'message': 'Prediction completed',
-                    'image_filename': image_filename
+                    'message': 'Prediction completed'
                 })
             return render_template(
                 'prediction.html',
@@ -183,7 +156,7 @@ else:
                 confidence=confidence,
                 lat=lat,
                 lon=lon,
-                image_filename=image_filename
+                image_base64=image_base64
             )
         except ValueError:
             flash('Invalid coordinates.', 'error')
@@ -231,21 +204,16 @@ else:
                 if image is None:
                     flash('Failed to fetch satellite image.', 'error')
                     return render_template('prediction.html', lat=lat, lon=lon)
-                print(f"Image type from get_image: {type(image)}")  # Debug
                 # Ensure image is a numpy array for predict_image
                 if not isinstance(image, np.ndarray):
                     flash('Unsupported image format from get_image.', 'error')
                     return render_template('prediction.html', lat=lat, lon=lon)
-                # Save a copy as PIL Image for display
+                # Convert image to base64 for display
                 image_pil = Image.fromarray(image.astype('uint8'))
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                image_filename = f'image_{timestamp}.jpg'
-                image_path = os.path.join(images_dir, image_filename)
-                image_pil.save(image_path, 'JPEG')
-                print(f"Image saved: {image_path}")  # Debug
-                # Clean up old images
-                cleanup_old_images(max_age_hours=24)
-                # Use original numpy array for prediction
+                buffered = io.BytesIO()
+                image_pil.save(buffered, format="JPEG")
+                image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                # Make prediction
                 label, confidence = predict_image(image, model)
                 save_prediction(lat, lon, label, confidence, cfg.predictions_file)
                 flash('Prediction successful!', 'success')
@@ -256,7 +224,7 @@ else:
                     confidence=confidence,
                     lat=lat,
                     lon=lon,
-                    image_filename=image_filename
+                    image_base64=image_base64
                 )
             except ValueError:
                 flash('Invalid coordinates.', 'error')
@@ -294,7 +262,7 @@ else:
             print(f"Error reading predictions: {str(e)}")  # Debug
             predictions_list = []
             flash(f'Error reading predictions: {str(e)}', 'error')
-        return render_template('predictions.html',  show_sidebar=False, predictions=predictions_list)
+        return render_template('predictions.html', show_sidebar=False, predictions=predictions_list)
 
     @app.route('/predict_all', methods=['POST'])
     def predict_all():
@@ -312,12 +280,11 @@ else:
                 if not isinstance(image, np.ndarray):
                     continue  # Skip invalid images
                 
-                # Save image
+                # Convert image to base64 for display
                 image_pil = Image.fromarray(image.astype('uint8'))
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                image_filename = f'batch_{timestamp}_{idx}.jpg'  # Unique filename
-                image_path = os.path.join(images_dir, image_filename)
-                image_pil.save(image_path, 'JPEG')
+                buffered = io.BytesIO()
+                image_pil.save(buffered, format="JPEG")
+                image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
                 
                 # Make prediction
                 label, confidence = predict_image(image, model)
@@ -336,7 +303,7 @@ else:
                     'lon': lon,
                     'label': label,
                     'confidence': confidence,
-                    'image_filename': image_filename
+                    'image_base64': image_base64
                 })
                 
                 # Add 2-second delay to respect API rate limits
@@ -345,7 +312,6 @@ else:
             # Clear coordinates after successful predictions
             session['coordinates'] = []
             session.modified = True
-            cleanup_old_images(max_age_hours=24)
             
             return render_template('predict_all.html', show_sidebar=False, predictions=predictions)
     

@@ -2,13 +2,13 @@
 
 {% block content %}
 <div class="predictions-container">
-    <h2> Batch Prediction Results</h2>
+    <h2>Batch Prediction Results</h2>
     
     {% if predictions %}
     {% for prediction in predictions %}
     <div class="prediction-card">
         <div class="prediction-image">
-            <img src="{{ url_for('static', filename='images/' + prediction.image_filename) }}" 
+            <img src="data:image/jpeg;base64,{{ prediction.image_base64 }}" 
                  alt="Satellite image of {{ prediction.lat|round(6) }}, {{ prediction.lon|round(6) }}"
                  class="satellite-img">
         </div>
@@ -154,6 +154,41 @@
 .no-predictions i {
     font-size: 3rem;
     margin-bottom: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .predictions-container {
+        padding: 1rem;
+    }
+
+    .prediction-card {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .prediction-image {
+        width: 100%;
+    }
+
+    .satellite-img {
+        height: 150px;
+    }
+
+    .result-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .result-icon {
+        margin-bottom: 0.5rem;
+        margin-right: 0;
+    }
+
+    .back-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 </style>
 {% endblock %}

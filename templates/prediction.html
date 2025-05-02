@@ -1,16 +1,15 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="predictions-container">
-    {% if label is defined %}
     <h2>Prediction Result</h2>
+    
     <div class="prediction-card">
-        {% if image_filename %}
         <div class="prediction-image">
-            <img src="{{ url_for('static', filename=('images/' + image_filename)) }}" 
-                 alt="Satellite Image of {{ lat|round(6) }}, {{ lon|round(6) }}"
+            <img src="data:image/jpeg;base64,{{ image_base64 }}" 
+                 alt="Satellite image of {{ lat|round(6) }}, {{ lon|round(6) }}"
                  class="satellite-img">
         </div>
-        {% endif %}
         <div class="prediction-details">
             <h3>📍 Coordinates: {{ "%.6f"|format(lat) }}, {{ "%.6f"|format(lon) }}</h3>
             <div class="result-card {{ 'solar-detected' if 'Solar' in label else 'no-solar' }}">
@@ -33,12 +32,6 @@
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="no-predictions">
-        <i class="fas fa-frown"></i>
-        <p>No prediction results available. Please try again.</p>
-    </div>
-    {% endif %}
     
     <a href="{{ url_for('map') }}" class="back-btn">
         <i></i> Back to Map
@@ -46,7 +39,6 @@
 </div>
 
 <style>
-/* Same CSS as your batch predictions template */
 .predictions-container {
     max-width: 1000px;
     margin: 0 auto;
@@ -144,15 +136,39 @@
     transform: translateY(-2px);
 }
 
-.no-predictions {
-    text-align: center;
-    padding: 2rem;
-    color: #757575;
-}
+/* Responsive Design */
+@media (max-width: 768px) {
+    .predictions-container {
+        padding: 1rem;
+    }
 
-.no-predictions i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    .prediction-card {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .prediction-image {
+        width: 100%;
+    }
+
+    .satellite-img {
+        height: 150px;
+    }
+
+    .result-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .result-icon {
+        margin-bottom: 0.5rem;
+        margin-right: 0;
+    }
+
+    .back-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 </style>
 {% endblock %}
