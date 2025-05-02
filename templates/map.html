@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+{% block content %}
+<div id="map" style="height: 350px; width: 100%;"></div>
+
+<!-- Success Message Container -->
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            {% if category == 'success' %}
+                <div class="success-message">
+                    {{ message }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endwith %}
+</div>
+
+<h2>Selected Coordinates</h2>
+
+<div class="coordinates-container">
+    {% if coordinates %}
+        {% for coord in coordinates %}
+        <div class="coordinate-card">
+            <div class="coord-info">
+                <span class="coord-label">Latitude</span>
+                <span class="coord-value">{{ coord.lat | round(6) }}</span>
+                <span class="coord-label">Longitude</span>
+                <span class="coord-value">{{ coord.lon | round(6) }}</span>
+            </div>
+            <div class="coord-actions">
+                <form method="POST" action="{{ url_for('prediction') }}"  onsubmit="return handlePrediction(this)">
+                    <input type="hidden" name="lat" value="{{ coord.lat }}">
+                    <input type="hidden" name="lon" value="{{ coord.lon }}">
+                    <button type="submit" class="predict-btn">
+                        <i class="fas fa-search"></i> Predict
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('delete_coordinate') }}">
+                    <input type="hidden" name="lat" value="{{ coord.lat }}">
+                    <input type="hidden" name="lon" value="{{ coord.lon }}">
+                    <button type="submit" class="delete-btn">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="predict-all-container">
+            <form method="POST" action="{{ url_for('predict_all') }}">
+                <button type="submit" class="predict-all-btn">
+                    <i class="fas fa-bolt"></i> Predict All Coordinates
+                </button>
+            </form>
+        </div>
+    {% else %}
+        <p class="no-coordinates">No coordinates selected yet.</p>
+    {% endif %}
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<script>
+function handlePrediction(form) {
+    // Immediately remove the coordinate card
+    const card = form.closest('.coordinate-card');
+    if (card) {
+        card.style.opacity = '0';
+        setTimeout(() => card.remove(), 500);
+    }
+    
+    // Add loading state
+    const button = form.querySelector('button');
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
+    button.disabled = true;
+
+    return true;
+}
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map with optical view
+    var mapCenter = {{ map_center | tojson }};
+    var zoom = {{ zoom }};
+    
+    var map = L.map('map').setView([mapCenter.lat, mapCenter.lon], zoom);
+    
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0','mt1','mt2','mt3'],
+        attribution: '© Google Maps'
+    }).addTo(map);
+
+    // Add markers
+    {% for coord in coordinates %}
+    L.marker([{{ coord.lat }}, {{ coord.lon }}]).addTo(map)
+        .bindPopup(`
+            Coordinate {{ loop.index }}<br>
+            Lat: {{ coord.lat | round(6) }}<br>
+            Lon: {{ coord.lon | round(6) }}
+        `);
+    {% endfor %}
+
+    // Map interactions
+    map.on('click', function(e) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+
+        // Create temporary marker with text
+        const tempMarker = L.marker(e.latlng, {
+            icon: L.divIcon({
+                className: 'temp-marker',
+                html: `<div>${lat}, ${lng}</div>`,
+                iconSize: [120, 30]
+            })
+        }).addTo(map);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            map.removeLayer(tempMarker);
+        }, 3000);
+
+        document.getElementById('lat').value = lat;
+        document.getElementById('lon').value = lng;
+        map.panTo(e.latlng);
+    });
+
+    // Search control
+    L.Control.geocoder({
+        defaultMarkGeocode: false,
+        geocoder: L.Control.Geocoder.nominatim()
+    }).on('markgeocode', function(e) {
+        const center = e.geocode.center;
+        map.panTo(center, 16);
+        document.getElementById('lat').value = center.lat.toFixed(6);
+        document.getElementById('lon').value = center.lng.toFixed(6);
+    }).addTo(map);
+
+    // Auto-hide success messages
+    setTimeout(() => {
+        document.querySelectorAll('.success-message').forEach(msg => {
+            msg.style.opacity = '0';
+            setTimeout(() => msg.remove(), 1000);
+        });
+    }, 4000);
+});
+</script>
+
+<style>
+    /* General Container */
+    .coordinates-container {
+        margin: 20px 0;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Coordinate Card */
+    .coordinate-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 15px;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.2s ease;
+    }
+
+    .coordinate-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .coord-info {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px 15px;
+        align-items: center;
+    }
+
+    .coord-label {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .coord-value {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .coord-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    /* Button Styles */
+    .predict-btn, .delete-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .predict-btn {
+        background: #17a2b8;
+    }
+
+    .predict-btn:hover {
+        background: #138496;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .predict-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .delete-btn {
+        background: #dc3545;
+    }
+
+    .delete-btn:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .delete-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .predict-btn i, .delete-btn i {
+        font-size: 1rem;
+    }
+
+    /* Predict All Button */
+    .predict-all-container {
+        margin: 20px 0;
+        text-align: center;
+    }
+
+    .predict-all-btn {
+        background: #28a745;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .predict-all-btn:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .predict-all-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .predict-all-btn i {
+        font-size: 1rem;
+    }
+
+    /* No Coordinates Message */
+    .no-coordinates {
+        text-align: center;
+        color: #6c757d;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin: 20px 0;
+        font-size: 1rem;
+    }
+
+    /* Flash Messages */
+    .flash-container {
+        margin: 15px 0;
+        min-height: 50px;
+    }
+
+    .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #c3e6cb;
+        transition: opacity 1s;
+        opacity: 1;
+        text-align: center;
+    }
+
+    /* Temporary Marker */
+    .temp-marker {
+        background: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 2px solid #0078A8;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        font-weight: bold;
+        text-align: center;
+        color: #0078A8;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .coordinate-card {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 12px;
+        }
+
+        .coord-actions {
+            margin-top: 12px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .predict-btn, .delete-btn {
+            width: 48%;
+            padding: 10px;
+            font-size: 0.85rem;
+        }
+
+        .predict-all-btn {
+            width: 100%;
+            padding: 12px;
+        }
+
+        .no-coordinates {
+            margin: 15px 0;
+            padding: 15px;
+        }
+    }
+</style>
+{% endblock %}

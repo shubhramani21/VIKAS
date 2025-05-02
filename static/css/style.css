@@ -1,0 +1,127 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+.sidebar {
+    width: 250px;
+    padding: 20px;
+    background-color: #f4f4f4;
+    border-right: 1px solid #ddd;
+}
+.sidebar h2 {
+    font-size: 1.2em;
+    margin-bottom: 15px;
+}
+.sidebar form label {
+    display: block;
+    margin: 10px 0 5px;
+}
+.sidebar form input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+.sidebar form button {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.sidebar form button:hover {
+    background-color: #218838;
+}
+.predictions-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 20px;
+}
+.predictions-btn:hover {
+    background-color: #0056b3;
+}
+.back-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 20px;
+}
+.back-btn:hover {
+    background-color: #0056b3;
+}
+.satellite-image {
+    max-width: 300px;
+    height: auto;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+}
+main {
+    flex: 1;
+    padding: 20px;
+}
+h1 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+th {
+    background-color: #f4f4f4;
+}
+.predict-btn {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+.predict-btn:hover {
+    background-color: #0056b3;
+}
+.delete-btn {
+    padding: 5px 10px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+.delete-btn:hover {
+    background-color: #c82333;
+}
+.messages {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+.success {
+    color: green;
+}
+.error {
+    color: red;
+}
+.warning {
+    color: orange;
+}
+

@@ -1,0 +1,49 @@
+your_project/
+├── app.py
+├── requirements.txt
+├── templates/
+│   ├── base.html
+│   └── index.html
+├── static/
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── script.js
+└── utils/
+    └── helpers.py
+
+
+  your_project/
+│
+├── app.py                 # Main Flask application file (entry point)
+├── requirements.txt       # List of Python dependencies
+├── config.py             # Configuration settings (e.g., database, secret keys)
+│
+├── templates/            # HTML templates for rendering pages
+│   ├── base.html         # Base template with common layout (header, footer, etc.)
+│   ├── index.html        # Home page template
+│   └── other_page.html   # Additional page templates as needed
+│
+├── static/               # Static files (CSS, JavaScript, images, etc.)
+│   ├── css/
+│   │   └── style.css     # Custom CSS styles
+│   ├── js/
+│   │   └── script.js     # Custom JavaScript
+│   └── images/           # Image assets
+│
+├── routes/               # Modular route files (optional for larger projects)
+│   ├── __init__.py
+│   ├── home.py           # Routes for home page
+│   └── other.py          # Routes for other pages
+│
+├── models/               # Data models (if using a database)
+│   ├── __init__.py
+│   └── user.py           # Example model for user data
+│
+├── utils/                # Utility functions and helpers
+│   ├── __init__.py
+│   └── helpers.py        # Common functions (e.g., data processing)
+│
+└── tests/                # Unit tests (optional but recommended)
+    ├── __init__.py
+    └── test_app.py       # Test cases for routes and functionality  
