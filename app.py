@@ -1,7 +1,8 @@
 import sys
 import os
+import time
 
-from flask import Flask, render_template, redirect, url_for, session, request, flash, jsonify
+from flask import Flask, render_template, redirect, url_for, session, request, flash, jsonify, send_file, send_from_directory
 import pandas as pd
 from config import Config
 from model import SolarModel, load_model
@@ -9,10 +10,6 @@ from utils import get_image, predict_image, save_prediction
 from datetime import datetime
 from PIL import Image
 import numpy as np
-import time
-from flask import send_file
-from flask import send_from_directory 
-
 
 def resource_path(relative_path):
     """Get absolute path to resources for both dev and packaged mode"""
@@ -267,15 +264,6 @@ else:
                 flash(f'Error: {str(e)}', 'error')
         return redirect(url_for('map'))  # Fallback to working route
 
-    """
-    @app.route('/cleanup_images', methods=['POST'])
-    def cleanup_images():
-        #Manually clean up old images
-        deleted_count = cleanup_old_images(max_age_hours=24)
-        flash(f'Cleaned up {deleted_count} old images.', 'success')
-        return redirect(request.referrer or url_for('map'))
-    """
-
     @app.route('/predictions')
     def predictions():
         """Display prediction history."""
@@ -310,10 +298,10 @@ else:
 
     @app.route('/predict_all', methods=['POST'])
     def predict_all():
+        """Predict solar panel presence for all coordinates with a 2-second delay."""
         try:
             predictions = []
             coordinates = session.get('coordinates', [])
-            
             
             for idx, coord in enumerate(coordinates):
                 lat = coord[0]
@@ -350,23 +338,25 @@ else:
                     'confidence': confidence,
                     'image_filename': image_filename
                 })
+                
+                # Add 2-second delay to respect API rate limits
+                time.sleep(2)
             
             # Clear coordinates after successful predictions
             session['coordinates'] = []
             session.modified = True
             cleanup_old_images(max_age_hours=24)
             
-            return render_template('predict_all.html',  show_sidebar=False, predictions=predictions)
+            return render_template('predict_all.html', show_sidebar=False, predictions=predictions)
     
         except Exception as e:
             flash(f'Batch prediction failed: {str(e)}', 'error')
             return redirect(url_for('map'))
-    # Add to app.py
+
     @app.route('/download_predictions')
     def download_predictions():
-
+        """Download the predictions CSV file."""
         csv_path = resource_path(cfg.predictions_file)
-
         if not os.path.exists(csv_path):
             flash('No predictions file found to download', 'error')
             return redirect(url_for('predictions'))
@@ -380,6 +370,7 @@ else:
 
     @app.route('/clear_predictions', methods=['POST'])
     def clear_predictions():
+        """Clear all prediction history."""
         try:
             if not os.path.exists(cfg.predictions_file):
                 flash('No predictions found to clear', 'error')
@@ -390,7 +381,6 @@ else:
         except Exception as e:
             flash(f'Error clearing predictions: {str(e)}', 'error')
         return redirect(url_for('predictions'))
-    
 
 if __name__ == '__main__':
     app.run(debug=True)

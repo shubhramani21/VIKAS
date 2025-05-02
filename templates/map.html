@@ -2,6 +2,14 @@
 {% block content %}
 <div id="map" style="height: 350px; width: 100%;"></div>
 
+<!-- Loading Screen -->
+<div id="loading-screen" class="loading-screen">
+    <div class="loading-content">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>Processing predictions, please wait...</p>
+    </div>
+</div>
+
 <!-- Success Message Container -->
 <div class="flash-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -28,7 +36,7 @@
                 <span class="coord-value">{{ coord.lon | round(6) }}</span>
             </div>
             <div class="coord-actions">
-                <form method="POST" action="{{ url_for('prediction') }}"  onsubmit="return handlePrediction(this)">
+                <form method="POST" action="{{ url_for('prediction') }}" onsubmit="return handlePrediction(this)">
                     <input type="hidden" name="lat" value="{{ coord.lat }}">
                     <input type="hidden" name="lon" value="{{ coord.lon }}">
                     <button type="submit" class="predict-btn">
@@ -47,7 +55,7 @@
         {% endfor %}
         
         <div class="predict-all-container">
-            <form method="POST" action="{{ url_for('predict_all') }}">
+            <form id="predict-all-form" method="POST" action="{{ url_for('predict_all') }}">
                 <button type="submit" class="predict-all-btn">
                     <i class="fas fa-bolt"></i> Predict All Coordinates
                 </button>
@@ -61,6 +69,8 @@
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<!-- jQuery for AJAX -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
 function handlePrediction(form) {
@@ -78,6 +88,7 @@ function handlePrediction(form) {
 
     return true;
 }
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize map with optical view
     var mapCenter = {{ map_center | tojson }};
@@ -143,10 +154,106 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => msg.remove(), 1000);
         });
     }, 4000);
+
+    // Handle Predict All form submission with AJAX
+    $('#predict-all-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading screen
+        document.getElementById('loading-screen').style.display = 'flex';
+        
+        // Disable the button
+        const button = this.querySelector('button');
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
+        button.disabled = true;
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            success: function(response) {
+                // Hide loading screen
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Redirect to the predict_all page by setting the document content
+                document.open();
+                document.write(response);
+                document.close();
+            },
+            error: function(xhr) {
+                // Hide loading screen
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Re-enable button
+                button.innerHTML = '<i class="fas fa-bolt"></i> Predict All Coordinates';
+                button.disabled = false;
+                
+                // Show error message
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Batch prediction failed. Please try again.';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = errorMsg;
+                document.querySelector('.flash-container').appendChild(errorDiv);
+                
+                // Auto-hide error message
+                setTimeout(() => {
+                    errorDiv.style.opacity = '0';
+                    setTimeout(() => errorDiv.remove(), 1000);
+                }, 4000);
+            }
+        });
+    });
 });
 </script>
 
 <style>
+    /* Loading Screen */
+    .loading-screen {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-content {
+        background: white;
+        padding: 20px 30px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .loading-content i {
+        color: #17a2b8;
+        margin-bottom: 15px;
+    }
+
+    .loading-content p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+
+    /* Error Message */
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #f5c6cb;
+        transition: opacity 1s;
+        opacity: 1;
+        text-align: center;
+        margin: 10px 0;
+    }
+
     /* General Container */
     .coordinates-container {
         margin: 20px 0;
@@ -348,6 +455,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .no-coordinates {
             margin: 15px 0;
             padding: 15px;
+        }
+
+        .loading-content {
+            padding: 15px 20px;
+        }
+
+        .loading-content p {
+            font-size: 1rem;
         }
     }
 </style>
