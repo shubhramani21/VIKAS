@@ -73,6 +73,24 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
+    
+    // Define update functions globally
+    function updateClearButton() {
+        const count = parseInt(document.getElementById('coord-count').textContent);
+        const clearBtn = document.getElementById('clear-all-btn');
+        if (clearBtn) {
+            clearBtn.disabled = count === 0;
+        }
+    }
+
+    function updateCoordinateCount() {
+        const count = parseInt(document.getElementById('coord-count').textContent);
+        const predictAllBtn = document.getElementById('predict-all-btn');
+        if (predictAllBtn) {
+            predictAllBtn.disabled = count === 0 || count > 30;
+        }
+        updateClearButton();
+    }
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize map with optical view
         var mapCenter = {{ map_center | tojson }};
@@ -138,6 +156,8 @@
                 setTimeout(() => msg.remove(), 1000);
             });
         }, 4000);
+        // Update buttons on initial load
+        updateCoordinateCount();
     
         // Handle Coordinate Form Submission with AJAX
         $('#coord-form').on('submit', function(e) {
@@ -146,7 +166,7 @@
             const button = this.querySelector('.analyze-btn');
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
             button.disabled = true;
-    
+
             $.ajax({
                 url: $(this).attr('action'),
                 type: 'POST',
@@ -191,7 +211,7 @@
                         // Update coordinate count
                         const count = parseInt($('#coord-count').text()) + 1;
                         $('#coord-count').text(count);
-                        updateCoordinateCount();
+                        updateCoordinateCount(); // Ensure button states are updated
                         
                         // Add marker to map
                         L.marker([response.lat, response.lon]).addTo(map)
@@ -216,7 +236,6 @@
                         : 'Failed to add coordinate. Please try again.';
                     showFlashMessage(errorMsg, 'error');
                     
-                    // Show popup for limit exceeded
                     if (xhr.responseJSON && xhr.responseJSON.message === 'Maximum 30 coordinates allowed.') {
                         alert('Maximum 30 coordinates allowed. Please remove some coordinates before adding more.');
                     }
@@ -265,6 +284,51 @@
             });
         });
     
+        // Handle Clear Coordinates form submission
+        $('#clear-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const button = this.querySelector('#clear-all-btn');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+            button.disabled = true;
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    // Remove all coordinate cards
+                    $('.coordinate-card').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                    
+                    // Update UI elements
+                    $('#coord-count').text('0');
+                    updateCoordinateCount();
+                    
+                    // Remove all markers from map
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // Show success message
+                    showFlashMessage(response.message, 'success');
+                    
+                    // Reset button
+                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
+                    button.disabled = true;
+                },
+                error: function(xhr) {
+                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
+                    button.disabled = false;
+                    showFlashMessage('Error clearing coordinates', 'error');
+                }
+            });
+        });
         // Function to show flash messages
         function showFlashMessage(message, type) {
             const flashContainer = document.querySelector('.flash-container');
@@ -278,8 +342,37 @@
                 setTimeout(() => messageDiv.remove(), 1000);
             }, 4000);
         }
-    });
+
+
+        const coordCount = {{ session.coordinates|length }};
+        document.getElementById('coord-count').textContent = coordCount;
+        updateCoordinateCount();
+        });
+
+        // Initialize clear button state on page load
+        updateClearButton();
+
+        document.getElementById('csv-form').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('csv_file');
+            if (fileInput.files[0].size > 102400) { // 100KB limit
+                alert('File size too large. Maximum 100KB allowed.');
+                e.preventDefault();
+                return;
+            }
+            
+            // Check if there are existing coordinates
+            const coordCount = parseInt(document.getElementById('coord-count').textContent);
+            if (coordCount > 0) {
+                if (!confirm('Uploading a new CSV will clear all existing coordinates. Do you want to proceed?')) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+
 </script>
+
+
 <style>
     /* Loading Screen */
     .loading-screen {

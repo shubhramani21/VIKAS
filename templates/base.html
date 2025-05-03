@@ -172,13 +172,15 @@
         border-top: 1px solid #dee2e6;
     }
 
-    .upload-btn {
+    .btn.upload-btn {
         background-color: #ff9800;
         color: white;
     }
 
-    .upload-btn:hover {
+    .btn.upload-btn:hover {
         background-color: #f57c00;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     }
 
     .coordinate-count {
@@ -200,6 +202,21 @@
 
     .predict-all-btn:hover:not(:disabled) {
         background-color: #7b1fa2;
+    }
+    .btn.clear-btn {
+        background-color: #dc3545;
+        color: white;
+        width: 100%;
+    }
+
+    .btn.clear-btn:hover {
+        background-color: #c82333;
+        opacity: 0.9;
+    }
+
+    .btn.clear-btn:disabled {
+        background-color: #e4606d;
+        cursor: not-allowed;
     }
 
     body {
@@ -260,9 +277,24 @@
                         Coordinates loaded: <span id="coord-count">{{ session.coordinates|length }}</span>/30
                     </div>
                 </div>
+
+                <div class="form-actions">
+                    <form method="POST" action="{{ url_for('clear_coordinates') }}" id="clear-coordinates-form">
+                        <button type="submit" class="btn clear-btn" id="clear-all-btn">
+                            <i class="fas fa-eraser"></i> Clear All Coordinates
+                        </button>
+                    </form>
+                </div>
             </div>
             
             <div class="history-btn-container">
+                <!-- <div class="form-actions">
+                    <form method="POST" action="{{ url_for('clear_coordinates') }}">
+                        <button type="submit" class="btn clear-btn" id="clear-all-btn">
+                            <i class="fas fa-eraser"></i> Clear All Coordinates
+                        </button>
+                    </form>
+                </div> -->
                 <a href="{{ url_for('predictions') }}" class="btn history-btn">
                     <i class="fas fa-history"></i> Prediction History
                 </a>
@@ -288,12 +320,51 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
-         function updateCoordinateCount() {
-            const count = {{ session.coordinates|length }};
-            document.getElementById('coord-count').textContent = count;
-            document.getElementById('predict-all-btn').disabled = count === 0 || count > 30;
-        }
+        // Handle Clear Coordinates form submission
+        $('#clear-coordinates-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const button = this.querySelector('#clear-all-btn');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+            button.disabled = true;
 
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    // Remove all coordinate cards
+                    $('.coordinate-card').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                    
+                    // Update UI elements
+                    $('#coord-count').text('0');
+                    updateCoordinateCount();
+                    
+                    // Remove all markers from map
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // Show success message
+                    showFlashMessage(response.message, 'success');
+                    
+                    // Reset button
+                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
+                    button.disabled = true;
+                },
+                error: function(xhr) {
+                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
+                    button.disabled = false;
+                    showFlashMessage('Error clearing coordinates', 'error');
+                }
+            });
+        });
         function predictAll() {
             if ({{ session.coordinates|length }} > 30) {
                 alert('Maximum 30 coordinates allowed for bulk prediction');
@@ -301,9 +372,6 @@
             }
             window.location.href = "{{ url_for('predict_all') }}";
         }
-
-        // Update count on page load
-        updateCoordinateCount();
         
         // Handle CSV form submission
         document.getElementById('csv-form').addEventListener('submit', function(e) {

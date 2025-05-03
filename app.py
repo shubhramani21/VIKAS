@@ -343,13 +343,17 @@ else:
 
         if file and file.filename.endswith('.csv'):
             try:
+                # Clear existing coordinates
+                session['coordinates'] = []
+                session.modified = True
+
                 df = pd.read_csv(file)
                 required_columns = ['latitude', 'longitude']
                 if not all(col in df.columns for col in required_columns):
                     flash('CSV must contain "latitude" and "longitude" columns', 'error')
                     return redirect(url_for('map'))
 
-                coordinates = session.get('coordinates', [])
+                coordinates = []
                 new_coords = 0
                 
                 for _, row in df.iterrows():
@@ -364,6 +368,8 @@ else:
                             else:
                                 flash('Maximum 30 coordinates reached. Some entries ignored.', 'warning')
                                 break
+                        else:
+                            flash('Some coordinates were duplicates and ignored.', 'warning')
                     except ValueError:
                         continue
 
@@ -376,6 +382,26 @@ else:
         else:
             flash('Invalid file type. Please upload a CSV file.', 'error')
 
+        return redirect(url_for('map'))
+
+    @app.route('/clear_coordinates', methods=['POST'])
+    def clear_coordinates():
+        try:
+            session['coordinates'] = []
+            session.modified = True
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'status': 'success',
+                    'message': 'All coordinates have been cleared successfully!'
+                })
+            flash('All coordinates have been cleared successfully!', 'success')
+        except Exception as e:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Error clearing coordinates: {str(e)}'
+                }), 500
+            flash(f'Error clearing coordinates: {str(e)}', 'error')
         return redirect(url_for('map'))
     
 
