@@ -81,6 +81,14 @@ else:
             lat = float(request.form['lat'])
             lon = float(request.form['lon'])
             coordinates = session.get('coordinates', [])
+            if len(coordinates) >= 30:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({
+                        'status': 'error',
+                        'message': 'Maximum 30 coordinates allowed.'
+                    }), 400
+                flash('Maximum 30 coordinates allowed.', 'error')
+                return redirect(url_for('map'))
             if not any(abs(c[0] - lat) < 0.0001 and abs(c[1] - lon) < 0.0001 for c in coordinates):
                 coordinates.append([lat, lon])
                 session['coordinates'] = coordinates
@@ -270,6 +278,9 @@ else:
         try:
             predictions = []
             coordinates = session.get('coordinates', [])
+            if len(coordinates) > 30:
+                flash('Maximum 30 coordinates allowed for bulk prediction', 'error')
+                return redirect(url_for('map'))
             
             for idx, coord in enumerate(coordinates):
                 lat = coord[0]
@@ -318,6 +329,55 @@ else:
         except Exception as e:
             flash(f'Batch prediction failed: {str(e)}', 'error')
             return redirect(url_for('map'))
+
+    @app.route('/upload_csv', methods=['POST'])
+    def upload_csv():
+        if 'csv_file' not in request.files:
+            flash('No file uploaded', 'error')
+            return redirect(url_for('map'))
+
+        file = request.files['csv_file']
+        if file.filename == '':
+            flash('No selected file', 'error')
+            return redirect(url_for('map'))
+
+        if file and file.filename.endswith('.csv'):
+            try:
+                df = pd.read_csv(file)
+                required_columns = ['latitude', 'longitude']
+                if not all(col in df.columns for col in required_columns):
+                    flash('CSV must contain "latitude" and "longitude" columns', 'error')
+                    return redirect(url_for('map'))
+
+                coordinates = session.get('coordinates', [])
+                new_coords = 0
+                
+                for _, row in df.iterrows():
+                    try:
+                        lat = float(row['latitude'])
+                        lon = float(row['longitude'])
+                        # Check for duplicates
+                        if not any(abs(c[0] - lat) < 0.0001 and abs(c[1] - lon) < 0.0001 for c in coordinates):
+                            if len(coordinates) < 30:
+                                coordinates.append([lat, lon])
+                                new_coords += 1
+                            else:
+                                flash('Maximum 30 coordinates reached. Some entries ignored.', 'warning')
+                                break
+                    except ValueError:
+                        continue
+
+                session['coordinates'] = coordinates
+                session.modified = True
+                flash(f'Successfully added {new_coords} new coordinates', 'success')
+                
+            except Exception as e:
+                flash(f'Error processing CSV: {str(e)}', 'error')
+        else:
+            flash('Invalid file type. Please upload a CSV file.', 'error')
+
+        return redirect(url_for('map'))
+    
 
     @app.route('/download_predictions')
     def download_predictions():

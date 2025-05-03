@@ -166,6 +166,41 @@
         background-color: #f8d7da;
         color: #721c24;
     }
+    .csv-upload-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .upload-btn {
+        background-color: #ff9800;
+        color: white;
+    }
+
+    .upload-btn:hover {
+        background-color: #f57c00;
+    }
+
+    .coordinate-count {
+        text-align: center;
+        margin: 15px 0;
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    .predict-all-btn {
+        background-color: #9c27b0;
+        color: white;
+    }
+
+    .predict-all-btn:disabled {
+        background-color: #b39ddb;
+        cursor: not-allowed;
+    }
+
+    .predict-all-btn:hover:not(:disabled) {
+        background-color: #7b1fa2;
+    }
 
     body {
         flex-direction: column;
@@ -208,6 +243,23 @@
                         </button>
                     </div>
                 </form>
+                <div class="csv-upload-section">
+                    <h3>Bulk Upload</h3>
+                    <form method="POST" action="{{ url_for('upload_csv') }}" enctype="multipart/form-data" id="csv-form">
+                        <div class="form-group">
+                            <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn upload-btn">
+                                <i class="fas fa-upload"></i> Upload CSV
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="coordinate-count">
+                        Coordinates loaded: <span id="coord-count">{{ session.coordinates|length }}</span>/30
+                    </div>
+                </div>
             </div>
             
             <div class="history-btn-container">
@@ -236,6 +288,31 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
+         function updateCoordinateCount() {
+            const count = {{ session.coordinates|length }};
+            document.getElementById('coord-count').textContent = count;
+            document.getElementById('predict-all-btn').disabled = count === 0 || count > 30;
+        }
+
+        function predictAll() {
+            if ({{ session.coordinates|length }} > 30) {
+                alert('Maximum 30 coordinates allowed for bulk prediction');
+                return;
+            }
+            window.location.href = "{{ url_for('predict_all') }}";
+        }
+
+        // Update count on page load
+        updateCoordinateCount();
+        
+        // Handle CSV form submission
+        document.getElementById('csv-form').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('csv_file');
+            if (fileInput.files[0].size > 102400) { // 100KB limit
+                alert('File size too large. Maximum 100KB allowed.');
+                e.preventDefault();
+            }
+        });
         function predictCoordinate() {
             const form = document.getElementById('coord-form');
             const lat = form.elements['lat'].value;

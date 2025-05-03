@@ -73,140 +73,213 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-function handlePrediction(form) {
-    // Immediately remove the coordinate card
-    const card = form.closest('.coordinate-card');
-    if (card) {
-        card.style.opacity = '0';
-        setTimeout(() => card.remove(), 500);
-    }
-    
-    // Add loading state
-    const button = form.querySelector('button');
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
-    button.disabled = true;
-
-    return true;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize map with optical view
-    var mapCenter = {{ map_center | tojson }};
-    var zoom = {{ zoom }};
-    
-    var map = L.map('map').setView([mapCenter.lat, mapCenter.lon], zoom);
-    
-    L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0','mt1','mt2','mt3'],
-        attribution: '© Google Maps'
-    }).addTo(map);
-
-    // Add markers
-    {% for coord in coordinates %}
-    L.marker([{{ coord.lat }}, {{ coord.lon }}]).addTo(map)
-        .bindPopup(`
-            Coordinate {{ loop.index }}<br>
-            Lat: {{ coord.lat | round(6) }}<br>
-            Lon: {{ coord.lon | round(6) }}
-        `);
-    {% endfor %}
-
-    // Map interactions
-    map.on('click', function(e) {
-        const lat = e.latlng.lat.toFixed(6);
-        const lng = e.latlng.lng.toFixed(6);
-
-        // Create temporary marker with text
-        const tempMarker = L.marker(e.latlng, {
-            icon: L.divIcon({
-                className: 'temp-marker',
-                html: `<div>${lat}, ${lng}</div>`,
-                iconSize: [120, 30]
-            })
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize map with optical view
+        var mapCenter = {{ map_center | tojson }};
+        var zoom = {{ zoom }};
+        
+        var map = L.map('map').setView([mapCenter.lat, mapCenter.lon], zoom);
+        
+        L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0','mt1','mt2','mt3'],
+            attribution: '© Google Maps'
         }).addTo(map);
-
-        // Auto-remove after 3 seconds
+    
+        // Add markers
+        {% for coord in coordinates %}
+        L.marker([{{ coord.lat }}, {{ coord.lon }}]).addTo(map)
+            .bindPopup(`
+                Coordinate {{ loop.index }}<br>
+                Lat: {{ coord.lat | round(6) }}<br>
+                Lon: {{ coord.lon | round(6) }}
+            `);
+        {% endfor %}
+    
+        // Map interactions
+        map.on('click', function(e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+    
+            // Create temporary marker with text
+            const tempMarker = L.marker(e.latlng, {
+                icon: L.divIcon({
+                    className: 'temp-marker',
+                    html: `<div>${lat}, ${lng}</div>`,
+                    iconSize: [120, 30]
+                })
+            }).addTo(map);
+    
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                map.removeLayer(tempMarker);
+            }, 3000);
+    
+            document.getElementById('lat').value = lat;
+            document.getElementById('lon').value = lng;
+            map.panTo(e.latlng);
+        });
+    
+        // Search control
+        L.Control.geocoder({
+            defaultMarkGeocode: false,
+            geocoder: L.Control.Geocoder.nominatim()
+        }).on('markgeocode', function(e) {
+            const center = e.geocode.center;
+            map.panTo(center, 16);
+            document.getElementById('lat').value = center.lat.toFixed(6);
+            document.getElementById('lon').value = center.lng.toFixed(6);
+        }).addTo(map);
+    
+        // Auto-hide success messages
         setTimeout(() => {
-            map.removeLayer(tempMarker);
-        }, 3000);
-
-        document.getElementById('lat').value = lat;
-        document.getElementById('lon').value = lng;
-        map.panTo(e.latlng);
-    });
-
-    // Search control
-    L.Control.geocoder({
-        defaultMarkGeocode: false,
-        geocoder: L.Control.Geocoder.nominatim()
-    }).on('markgeocode', function(e) {
-        const center = e.geocode.center;
-        map.panTo(center, 16);
-        document.getElementById('lat').value = center.lat.toFixed(6);
-        document.getElementById('lon').value = center.lng.toFixed(6);
-    }).addTo(map);
-
-    // Auto-hide success messages
-    setTimeout(() => {
-        document.querySelectorAll('.success-message').forEach(msg => {
-            msg.style.opacity = '0';
-            setTimeout(() => msg.remove(), 1000);
+            document.querySelectorAll('.success-message').forEach(msg => {
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 1000);
+            });
+        }, 4000);
+    
+        // Handle Coordinate Form Submission with AJAX
+        $('#coord-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const button = this.querySelector('.analyze-btn');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            button.disabled = true;
+    
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: $(this).serialize(),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    button.innerHTML = '<i></i> Add Coordinate';
+                    button.disabled = false;
+                    
+                    if (response.status === 'success') {
+                        // Add new coordinate card dynamically
+                        const newCard = `
+                            <div class="coordinate-card" style="opacity: 0;">
+                                <div class="coord-info">
+                                    <span class="coord-label">Latitude</span>
+                                    <span class="coord-value">${response.lat.toFixed(6)}</span>
+                                    <span class="coord-label">Longitude</span>
+                                    <span class="coord-value">${response.lon.toFixed(6)}</span>
+                                </div>
+                                <div class="coord-actions">
+                                    <form method="POST" action="{{ url_for('prediction') }}" onsubmit="return handlePrediction(this)">
+                                        <input type="hidden" name="lat" value="${response.lat}">
+                                        <input type="hidden" name="lon" value="${response.lon}">
+                                        <button type="submit" class="predict-btn">
+                                            <i class="fas fa-search"></i> Predict
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('delete_coordinate') }}">
+                                        <input type="hidden" name="lat" value="${response.lat}">
+                                        <input type="hidden" name="lon" value="${response.lon}">
+                                        <button type="submit" class="delete-btn">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>`;
+                        $('.coordinates-container').prepend(newCard);
+                        $('.coordinate-card').first().animate({ opacity: 1 }, 500);
+                        
+                        // Update coordinate count
+                        const count = parseInt($('#coord-count').text()) + 1;
+                        $('#coord-count').text(count);
+                        updateCoordinateCount();
+                        
+                        // Add marker to map
+                        L.marker([response.lat, response.lon]).addTo(map)
+                            .bindPopup(`
+                                Coordinate<br>
+                                Lat: ${response.lat.toFixed(6)}<br>
+                                Lon: ${response.lon.toFixed(6)}
+                            `);
+                        
+                        // Show success message
+                        showFlashMessage(response.message, 'success');
+                    } else {
+                        showFlashMessage(response.message, response.status);
+                    }
+                },
+                error: function(xhr) {
+                    button.innerHTML = '<i></i> Add Coordinate';
+                    button.disabled = false;
+                    
+                    const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                        ? xhr.responseJSON.message 
+                        : 'Failed to add coordinate. Please try again.';
+                    showFlashMessage(errorMsg, 'error');
+                    
+                    // Show popup for limit exceeded
+                    if (xhr.responseJSON && xhr.responseJSON.message === 'Maximum 30 coordinates allowed.') {
+                        alert('Maximum 30 coordinates allowed. Please remove some coordinates before adding more.');
+                    }
+                }
+            });
         });
-    }, 4000);
-
-    // Handle Predict All form submission with AJAX
-    $('#predict-all-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        // Show loading screen
-        document.getElementById('loading-screen').style.display = 'flex';
-        
-        // Disable the button
-        const button = this.querySelector('button');
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
-        button.disabled = true;
-
-        $.ajax({
-            url: $(this).attr('action'),
-            type: 'POST',
-            success: function(response) {
-                // Hide loading screen
-                document.getElementById('loading-screen').style.display = 'none';
-                
-                // Redirect to the predict_all page by setting the document content
-                document.open();
-                document.write(response);
-                document.close();
-            },
-            error: function(xhr) {
-                // Hide loading screen
-                document.getElementById('loading-screen').style.display = 'none';
-                
-                // Re-enable button
-                button.innerHTML = '<i class="fas fa-bolt"></i> Predict All Coordinates';
-                button.disabled = false;
-                
-                // Show error message
-                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
-                    ? xhr.responseJSON.message 
-                    : 'Batch prediction failed. Please try again.';
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message';
-                errorDiv.textContent = errorMsg;
-                document.querySelector('.flash-container').appendChild(errorDiv);
-                
-                // Auto-hide error message
-                setTimeout(() => {
-                    errorDiv.style.opacity = '0';
-                    setTimeout(() => errorDiv.remove(), 1000);
-                }, 4000);
-            }
+    
+        // Handle Predict All form submission with AJAX
+        $('#predict-all-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading screen
+            document.getElementById('loading-screen').style.display = 'flex';
+            
+            // Disable the button
+            const button = this.querySelector('button');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
+            button.disabled = true;
+    
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                success: function(response) {
+                    // Hide loading screen
+                    document.getElementById('loading-screen').style.display = 'none';
+                    
+                    // Redirect to the predict_all page by setting the document content
+                    document.open();
+                    document.write(response);
+                    document.close();
+                },
+                error: function(xhr) {
+                    // Hide loading screen
+                    document.getElementById('loading-screen').style.display = 'none';
+                    
+                    // Re-enable button
+                    button.innerHTML = '<i class="fas fa-bolt"></i> Predict All Coordinates';
+                    button.disabled = false;
+                    
+                    // Show error message
+                    const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                        ? xhr.responseJSON.message 
+                        : 'Batch prediction failed. Please try again.';
+                    showFlashMessage(errorMsg, 'error');
+                }
+            });
         });
+    
+        // Function to show flash messages
+        function showFlashMessage(message, type) {
+            const flashContainer = document.querySelector('.flash-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${type}-message`;
+            messageDiv.textContent = message;
+            flashContainer.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => messageDiv.remove(), 1000);
+            }, 4000);
+        }
     });
-});
 </script>
-
 <style>
     /* Loading Screen */
     .loading-screen {
