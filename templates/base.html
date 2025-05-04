@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- jQuery for AJAX -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <style>
     .container {
@@ -166,6 +168,7 @@
         background-color: #f8d7da;
         color: #721c24;
     }
+
     .csv-upload-section {
         margin-top: 20px;
         padding-top: 20px;
@@ -203,6 +206,7 @@
     .predict-all-btn:hover:not(:disabled) {
         background-color: #7b1fa2;
     }
+
     .btn.clear-btn {
         background-color: #dc3545;
         color: white;
@@ -233,7 +237,6 @@
         {% if show_sidebar|default(true) %}
         <div class="sidebar">
             <div class="logo-container">
-                <!-- <img src="{{ url_for('static', filename='img/solar-logo.png') }}" alt="Solar Detection Logo" class="logo"> -->
                 <h1>Solar Panel Detection</h1>
             </div>
         
@@ -253,7 +256,7 @@
                     
                     <div class="form-actions">
                         <button type="submit" class="btn analyze-btn">
-                            <i ></i> Add Coordinate
+                            <i></i> Add Coordinate
                         </button>
                         <button type="button" onclick="predictCoordinate()" class="btn predict-btn">
                             <i></i> Predict
@@ -280,7 +283,7 @@
 
                 <div class="form-actions">
                     <form method="POST" action="{{ url_for('clear_coordinates') }}" id="clear-coordinates-form">
-                        <button type="submit" class="btn clear-btn" id="clear-all-btn">
+                        <button type="submit" class="btn clear-btn" id="clear-all-btn" disabled>
                             <i class="fas fa-eraser"></i> Clear All Coordinates
                         </button>
                     </form>
@@ -288,13 +291,6 @@
             </div>
             
             <div class="history-btn-container">
-                <!-- <div class="form-actions">
-                    <form method="POST" action="{{ url_for('clear_coordinates') }}">
-                        <button type="submit" class="btn clear-btn" id="clear-all-btn">
-                            <i class="fas fa-eraser"></i> Clear All Coordinates
-                        </button>
-                    </form>
-                </div> -->
                 <a href="{{ url_for('predictions') }}" class="btn history-btn">
                     <i class="fas fa-history"></i> Prediction History
                 </a>
@@ -304,13 +300,6 @@
 
         <main>
             {% with messages = get_flashed_messages(with_categories=true) %}
-            <!-- {% if messages %}
-            <ul class="messages">
-                {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %} -->
             {% endwith %}
             {% block content %}{% endblock %}
         </main>
@@ -320,51 +309,44 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
-        // Handle Clear Coordinates form submission
-        $('#clear-coordinates-form').on('submit', function(e) {
-            e.preventDefault();
+        // Function to show flash messages
+        function showFlashMessage(message, type) {
+            const flashContainer = document.querySelector('.flash-container') || document.createElement('div');
+            if (!flashContainer.classList.contains('flash-container')) {
+                flashContainer.className = 'flash-container';
+                document.querySelector('main').prepend(flashContainer);
+            }
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${type}-message`;
+            messageDiv.textContent = message;
+            flashContainer.appendChild(messageDiv);
             
-            const button = this.querySelector('#clear-all-btn');
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
-            button.disabled = true;
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => messageDiv.remove(), 1000);
+            }, 4000);
+        }
 
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function(response) {
-                    // Remove all coordinate cards
-                    $('.coordinate-card').fadeOut(500, function() {
-                        $(this).remove();
-                    });
-                    
-                    // Update UI elements
-                    $('#coord-count').text('0');
-                    updateCoordinateCount();
-                    
-                    // Remove all markers from map
-                    map.eachLayer(layer => {
-                        if (layer instanceof L.Marker) {
-                            map.removeLayer(layer);
-                        }
-                    });
+        // Update coordinate count and button states
+        function updateCoordinateCount() {
+            const count = parseInt(document.getElementById('coord-count').textContent);
+            const predictAllBtn = document.getElementById('predict-all-btn');
+            if (predictAllBtn) {
+                predictAllBtn.disabled = count === 0 || count > 30;
+            }
+            updateClearButton();
+        }
 
-                    // Show success message
-                    showFlashMessage(response.message, 'success');
-                    
-                    // Reset button
-                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
-                    button.disabled = true;
-                },
-                error: function(xhr) {
-                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
-                    button.disabled = false;
-                    showFlashMessage('Error clearing coordinates', 'error');
-                }
-            });
-        });
+        // Update clear button state
+        function updateClearButton() {
+            const count = parseInt(document.getElementById('coord-count').textContent);
+            const clearBtn = document.getElementById('clear-all-btn');
+            if (clearBtn) {
+                clearBtn.disabled = count === 0;
+            }
+        }
+
+        // Predict all coordinates
         function predictAll() {
             if ({{ session.coordinates|length }} > 30) {
                 alert('Maximum 30 coordinates allowed for bulk prediction');
@@ -372,15 +354,8 @@
             }
             window.location.href = "{{ url_for('predict_all') }}";
         }
-        
-        // Handle CSV form submission
-        document.getElementById('csv-form').addEventListener('submit', function(e) {
-            const fileInput = document.getElementById('csv_file');
-            if (fileInput.files[0].size > 102400) { // 100KB limit
-                alert('File size too large. Maximum 100KB allowed.');
-                e.preventDefault();
-            }
-        });
+
+        // Predict single coordinate
         function predictCoordinate() {
             const form = document.getElementById('coord-form');
             const lat = form.elements['lat'].value;
@@ -391,7 +366,6 @@
                 return;
             }
             
-            // Create a temporary form for prediction
             const tempForm = document.createElement('form');
             tempForm.method = 'POST';
             tempForm.action = "{{ url_for('prediction') }}";
@@ -411,6 +385,54 @@
             document.body.appendChild(tempForm);
             tempForm.submit();
         }
+
+        // Handle CSV form submission
+        document.getElementById('csv-form').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('csv_file');
+            if (fileInput.files[0].size > 102400) { // 100KB limit
+                alert('File size too large. Maximum 100KB allowed.');
+                e.preventDefault();
+                return;
+            }
+            
+            const coordCount = parseInt(document.getElementById('coord-count').textContent);
+            if (coordCount > 0) {
+                if (!confirm('Uploading a new CSV will clear all existing coordinates. Do you want to proceed?')) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+
+        // Handle Clear Coordinates form submission
+        $('#clear-coordinates-form').on('submit', function(e) {
+            e.preventDefault();
+            const button = this.querySelector('#clear-all-btn');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+            button.disabled = true;
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: (response) => {
+                    // Show success message
+                    showFlashMessage(response.message, 'success');
+                    // Redirect to map page to refresh
+                    window.location.href = "{{ url_for('map') }}";
+                },
+                error: (xhr) => {
+                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
+                    button.disabled = false;
+                    showFlashMessage(xhr.responseJSON?.message || 'Error clearing coordinates', 'error');
+                }
+            });
+        });
+
+        // Initialize button states on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCoordinateCount();
+        });
     </script>
 </body>
 </html>

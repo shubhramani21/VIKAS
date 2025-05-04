@@ -317,8 +317,7 @@ else:
                     'image_base64': image_base64
                 })
                 
-                # Add 2-second delay to respect API rate limits
-                time.sleep(2)
+                time.sleep(1)
             
             # Clear coordinates after successful predictions
             session['coordinates'] = []

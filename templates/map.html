@@ -36,7 +36,7 @@
                 <span class="coord-value">{{ coord.lon | round(6) }}</span>
             </div>
             <div class="coord-actions">
-                <form method="POST" action="{{ url_for('prediction') }}" onsubmit="return handlePrediction(this)">
+                <form method="POST" action="{{ url_for('prediction') }}">
                     <input type="hidden" name="lat" value="{{ coord.lat }}">
                     <input type="hidden" name="lon" value="{{ coord.lon }}">
                     <button type="submit" class="predict-btn">
@@ -56,7 +56,7 @@
         
         <div class="predict-all-container">
             <form id="predict-all-form" method="POST" action="{{ url_for('predict_all') }}">
-                <button type="submit" class="predict-all-btn">
+                <button type="submit" class="predict-all-btn" id="predict-all-btn">
                     <i class="fas fa-bolt"></i> Predict All Coordinates
                 </button>
             </form>
@@ -73,305 +73,220 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map with optical view
+    var mapCenter = {{ map_center | tojson }};
+    var zoom = {{ zoom }};
     
-    // Define update functions globally
-    function updateClearButton() {
-        const count = parseInt(document.getElementById('coord-count').textContent);
-        const clearBtn = document.getElementById('clear-all-btn');
-        if (clearBtn) {
-            clearBtn.disabled = count === 0;
-        }
-    }
+    window.map = L.map('map').setView([mapCenter.lat, mapCenter.lon], zoom);
+    
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0','mt1','mt2','mt3'],
+        attribution: '© Google Maps'
+    }).addTo(map);
 
-    function updateCoordinateCount() {
-        const count = parseInt(document.getElementById('coord-count').textContent);
-        const predictAllBtn = document.getElementById('predict-all-btn');
-        if (predictAllBtn) {
-            predictAllBtn.disabled = count === 0 || count > 30;
-        }
-        updateClearButton();
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize map with optical view
-        var mapCenter = {{ map_center | tojson }};
-        var zoom = {{ zoom }};
-        
-        var map = L.map('map').setView([mapCenter.lat, mapCenter.lon], zoom);
-        
-        L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0','mt1','mt2','mt3'],
-            attribution: '© Google Maps'
+    // Add markers
+    {% for coord in coordinates %}
+    L.marker([{{ coord.lat }}, {{ coord.lon }}]).addTo(map)
+        .bindPopup(`
+            Coordinate {{ loop.index }}<br>
+            Lat: {{ coord.lat | round(6) }}<br>
+            Lon: {{ coord.lon | round(6) }}
+        `);
+    {% endfor %}
+
+    // Map interactions
+    map.on('click', function(e) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+
+        // Create temporary marker with text
+        const tempMarker = L.marker(e.latlng, {
+            icon: L.divIcon({
+                className: 'temp-marker',
+                html: `<div>${lat}, ${lng}</div>`,
+                iconSize: [120, 30]
+            })
         }).addTo(map);
-    
-        // Add markers
-        {% for coord in coordinates %}
-        L.marker([{{ coord.lat }}, {{ coord.lon }}]).addTo(map)
-            .bindPopup(`
-                Coordinate {{ loop.index }}<br>
-                Lat: {{ coord.lat | round(6) }}<br>
-                Lon: {{ coord.lon | round(6) }}
-            `);
-        {% endfor %}
-    
-        // Map interactions
-        map.on('click', function(e) {
-            const lat = e.latlng.lat.toFixed(6);
-            const lng = e.latlng.lng.toFixed(6);
-    
-            // Create temporary marker with text
-            const tempMarker = L.marker(e.latlng, {
-                icon: L.divIcon({
-                    className: 'temp-marker',
-                    html: `<div>${lat}, ${lng}</div>`,
-                    iconSize: [120, 30]
-                })
-            }).addTo(map);
-    
-            // Auto-remove after 3 seconds
-            setTimeout(() => {
-                map.removeLayer(tempMarker);
-            }, 3000);
-    
-            document.getElementById('lat').value = lat;
-            document.getElementById('lon').value = lng;
-            map.panTo(e.latlng);
-        });
-    
-        // Search control
-        L.Control.geocoder({
-            defaultMarkGeocode: false,
-            geocoder: L.Control.Geocoder.nominatim()
-        }).on('markgeocode', function(e) {
-            const center = e.geocode.center;
-            map.panTo(center, 16);
-            document.getElementById('lat').value = center.lat.toFixed(6);
-            document.getElementById('lon').value = center.lng.toFixed(6);
-        }).addTo(map);
-    
-        // Auto-hide success messages
+
+        // Auto-remove after 3 seconds
         setTimeout(() => {
-            document.querySelectorAll('.success-message').forEach(msg => {
-                msg.style.opacity = '0';
-                setTimeout(() => msg.remove(), 1000);
-            });
-        }, 4000);
-        // Update buttons on initial load
-        updateCoordinateCount();
-    
-        // Handle Coordinate Form Submission with AJAX
-        $('#coord-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            const button = this.querySelector('.analyze-btn');
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-            button.disabled = true;
+            map.removeLayer(tempMarker);
+        }, 3000);
 
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                data: $(this).serialize(),
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function(response) {
-                    button.innerHTML = '<i></i> Add Coordinate';
-                    button.disabled = false;
+        document.getElementById('lat').value = lat;
+        document.getElementById('lon').value = lng;
+        map.panTo(e.latlng);
+    });
+
+    // Search control
+    L.Control.geocoder({
+        defaultMarkGeocode: false,
+        geocoder: L.Control.Geocoder.nominatim()
+    }).on('markgeocode', function(e) {
+        const center = e.geocode.center;
+        map.panTo(center, 16);
+        document.getElementById('lat').value = center.lat.toFixed(6);
+        document.getElementById('lon').value = center.lng.toFixed(6);
+    }).addTo(map);
+
+    // Auto-hide success messages
+    setTimeout(() => {
+        document.querySelectorAll('.success-message').forEach(msg => {
+            msg.style.opacity = '0';
+            setTimeout(() => msg.remove(), 1000);
+        });
+    }, 4000);
+
+    // Update buttons on initial load
+    updateCoordinateCount();
+
+    // Handle Coordinate Form Submission with AJAX
+    $('#coord-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const button = this.querySelector('.analyze-btn');
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        button.disabled = true;
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                button.innerHTML = '<i></i> Add Coordinate';
+                button.disabled = false;
+                
+                if (response.status === 'success') {
+                    // Remove "No coordinates" message if present
+                    const noCoordsMessage = $('.no-coordinates');
+                    if (noCoordsMessage.length) {
+                        noCoordsMessage.remove();
+                    }
+
+                    // Add new coordinate card dynamically
+                    const newCard = `
+                        <div class="coordinate-card" style="opacity: 0;">
+                            <div class="coord-info">
+                                <span class="coord-label">Latitude</span>
+                                <span class="coord-value">${response.lat.toFixed(6)}</span>
+                                <span class="coord-label">Longitude</span>
+                                <span class="coord-value">${response.lon.toFixed(6)}</span>
+                            </div>
+                            <div class="coord-actions">
+                                <form method="POST" action="{{ url_for('prediction') }}">
+                                    <input type="hidden" name="lat" value="${response.lat}">
+                                    <input type="hidden" name="lon" value="${response.lon}">
+                                    <button type="submit" class="predict-btn">
+                                        <i class="fas fa-search"></i> Predict
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('delete_coordinate') }}">
+                                    <input type="hidden" name="lat" value="${response.lat}">
+                                    <input type="hidden" name="lon" value="${response.lon}">
+                                    <button type="submit" class="delete-btn">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>`;
+                    $('.coordinates-container').prepend(newCard);
+                    $('.coordinate-card').first().animate({ opacity: 1 }, 500);
                     
-                    if (response.status === 'success') {
-                        // Add new coordinate card dynamically
-                        const newCard = `
-                            <div class="coordinate-card" style="opacity: 0;">
-                                <div class="coord-info">
-                                    <span class="coord-label">Latitude</span>
-                                    <span class="coord-value">${response.lat.toFixed(6)}</span>
-                                    <span class="coord-label">Longitude</span>
-                                    <span class="coord-value">${response.lon.toFixed(6)}</span>
-                                </div>
-                                <div class="coord-actions">
-                                    <form method="POST" action="{{ url_for('prediction') }}" onsubmit="return handlePrediction(this)">
-                                        <input type="hidden" name="lat" value="${response.lat}">
-                                        <input type="hidden" name="lon" value="${response.lon}">
-                                        <button type="submit" class="predict-btn">
-                                            <i class="fas fa-search"></i> Predict
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ url_for('delete_coordinate') }}">
-                                        <input type="hidden" name="lat" value="${response.lat}">
-                                        <input type="hidden" name="lon" value="${response.lon}">
-                                        <button type="submit" class="delete-btn">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
+                    // Add "Predict All" button if this is the first coordinate
+                    if (parseInt($('#coord-count').text()) === 0) {
+                        const predictAllContainer = `
+                            <div class="predict-all-container">
+                                <form id="predict-all-form" method="POST" action="{{ url_for('predict_all') }}">
+                                    <button type="submit" class="predict-all-btn" id="predict-all-btn">
+                                        <i class="fas fa-bolt"></i> Predict All Coordinates
+                                    </button>
+                                </form>
                             </div>`;
-                        $('.coordinates-container').prepend(newCard);
-                        $('.coordinate-card').first().animate({ opacity: 1 }, 500);
-                        
-                        // Update coordinate count
-                        const count = parseInt($('#coord-count').text()) + 1;
-                        $('#coord-count').text(count);
-                        updateCoordinateCount(); // Ensure button states are updated
-                        
-                        // Add marker to map
-                        L.marker([response.lat, response.lon]).addTo(map)
-                            .bindPopup(`
-                                Coordinate<br>
-                                Lat: ${response.lat.toFixed(6)}<br>
-                                Lon: ${response.lon.toFixed(6)}
-                            `);
-                        
-                        // Show success message
-                        showFlashMessage(response.message, 'success');
-                    } else {
-                        showFlashMessage(response.message, response.status);
+                        $('.coordinates-container').append(predictAllContainer);
                     }
-                },
-                error: function(xhr) {
-                    button.innerHTML = '<i></i> Add Coordinate';
-                    button.disabled = false;
-                    
-                    const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
-                        ? xhr.responseJSON.message 
-                        : 'Failed to add coordinate. Please try again.';
-                    showFlashMessage(errorMsg, 'error');
-                    
-                    if (xhr.responseJSON && xhr.responseJSON.message === 'Maximum 30 coordinates allowed.') {
-                        alert('Maximum 30 coordinates allowed. Please remove some coordinates before adding more.');
-                    }
-                }
-            });
-        });
-    
-        // Handle Predict All form submission with AJAX
-        $('#predict-all-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            // Show loading screen
-            document.getElementById('loading-screen').style.display = 'flex';
-            
-            // Disable the button
-            const button = this.querySelector('button');
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
-            button.disabled = true;
-    
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                success: function(response) {
-                    // Hide loading screen
-                    document.getElementById('loading-screen').style.display = 'none';
-                    
-                    // Redirect to the predict_all page by setting the document content
-                    document.open();
-                    document.write(response);
-                    document.close();
-                },
-                error: function(xhr) {
-                    // Hide loading screen
-                    document.getElementById('loading-screen').style.display = 'none';
-                    
-                    // Re-enable button
-                    button.innerHTML = '<i class="fas fa-bolt"></i> Predict All Coordinates';
-                    button.disabled = false;
-                    
-                    // Show error message
-                    const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
-                        ? xhr.responseJSON.message 
-                        : 'Batch prediction failed. Please try again.';
-                    showFlashMessage(errorMsg, 'error');
-                }
-            });
-        });
-    
-        // Handle Clear Coordinates form submission
-        $('#clear-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            const button = this.querySelector('#clear-all-btn');
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
-            button.disabled = true;
 
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                success: function(response) {
-                    // Remove all coordinate cards
-                    $('.coordinate-card').fadeOut(500, function() {
-                        $(this).remove();
-                    });
-                    
-                    // Update UI elements
-                    $('#coord-count').text('0');
+                    // Update coordinate count
+                    const count = parseInt($('#coord-count').text()) + 1;
+                    $('#coord-count').text(count);
                     updateCoordinateCount();
                     
-                    // Remove all markers from map
-                    map.eachLayer(layer => {
-                        if (layer instanceof L.Marker) {
-                            map.removeLayer(layer);
-                        }
-                    });
-
+                    // Add marker to map
+                    L.marker([response.lat, response.lon]).addTo(map)
+                        .bindPopup(`
+                            Coordinate<br>
+                            Lat: ${response.lat.toFixed(6)}<br>
+                            Lon: ${response.lon.toFixed(6)}
+                        `);
+                    
                     // Show success message
                     showFlashMessage(response.message, 'success');
-                    
-                    // Reset button
-                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
-                    button.disabled = true;
-                },
-                error: function(xhr) {
-                    button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';
-                    button.disabled = false;
-                    showFlashMessage('Error clearing coordinates', 'error');
+                } else {
+                    showFlashMessage(response.message, response.status);
                 }
-            });
-        });
-        // Function to show flash messages
-        function showFlashMessage(message, type) {
-            const flashContainer = document.querySelector('.flash-container');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `${type}-message`;
-            messageDiv.textContent = message;
-            flashContainer.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                messageDiv.style.opacity = '0';
-                setTimeout(() => messageDiv.remove(), 1000);
-            }, 4000);
-        }
-
-
-        const coordCount = {{ session.coordinates|length }};
-        document.getElementById('coord-count').textContent = coordCount;
-        updateCoordinateCount();
-        });
-
-        // Initialize clear button state on page load
-        updateClearButton();
-
-        document.getElementById('csv-form').addEventListener('submit', function(e) {
-            const fileInput = document.getElementById('csv_file');
-            if (fileInput.files[0].size > 102400) { // 100KB limit
-                alert('File size too large. Maximum 100KB allowed.');
-                e.preventDefault();
-                return;
-            }
-            
-            // Check if there are existing coordinates
-            const coordCount = parseInt(document.getElementById('coord-count').textContent);
-            if (coordCount > 0) {
-                if (!confirm('Uploading a new CSV will clear all existing coordinates. Do you want to proceed?')) {
-                    e.preventDefault();
-                    return;
+            },
+            error: function(xhr) {
+                button.innerHTML = '<i></i> Add Coordinate';
+                button.disabled = false;
+                
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Failed to add coordinate. Please try again.';
+                showFlashMessage(errorMsg, 'error');
+                
+                if (xhr.responseJSON && xhr.responseJSON.message === 'Maximum 30 coordinates allowed.') {
+                    alert('Maximum 30 coordinates allowed. Please remove some coordinates before adding more.');
                 }
             }
         });
+    });
 
+    // Handle Predict All form submission with AJAX
+    $(document).on('submit', '#predict-all-form', function(e) {
+        e.preventDefault();
+        
+        // Show loading screen
+        document.getElementById('loading-screen').style.display = 'flex';
+        
+        // Disable the button
+        const button = this.querySelector('button');
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Predicting...';
+        button.disabled = true;
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            success: function(response) {
+                // Hide loading screen
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Redirect to the predict_all page by setting the document content
+                document.open();
+                document.write(response);
+                document.close();
+            },
+            error: function(xhr) {
+                // Hide loading screen
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Re-enable button
+                button.innerHTML = '<i class="fas fa-bolt"></i> Predict All Coordinates';
+                button.disabled = false;
+                
+                // Show error message
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Batch prediction failed. Please try again.';
+                showFlashMessage(errorMsg, 'error');
+            }
+        });
+    });
+});
 </script>
-
 
 <style>
     /* Loading Screen */
