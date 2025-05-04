@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar Panel Detection</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Solar Park Detection</title>
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
@@ -237,7 +237,8 @@
         {% if show_sidebar|default(true) %}
         <div class="sidebar">
             <div class="logo-container">
-                <h1>Solar Panel Detection</h1>
+                <img src="{{ url_for('static', filename='images/isroLogo.png') }}" alt="LOGO" class="logo"> 
+                <h1>Solar Park Detection</h1>
             </div>
         
             <div class="coordinate-form">

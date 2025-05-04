@@ -25,7 +25,7 @@
                 <div class="result-text">
                     <span class="result-label">{{ prediction.label }}</span>
                     <div class="confidence-display">
-                        <span class="confidence-value">{{ (prediction.confidence * 100)|round(1) }}%</span>
+                        <span class="confidence-value">Confidance: {{ (prediction.confidence * 100)|round(1) }}%</span>
                         <div class="confidence-bar">
                             <div class="confidence-fill" style="width: {{ prediction.confidence * 100 }}%"></div>
                         </div>
@@ -38,7 +38,7 @@
     {% else %}
     <div class="no-predictions">
         <i class="fas fa-frown"></i>
-        <p>No predictions were generated. Please check your coordinates and try again.</p>
+        <p>No predictions were generated. Please check your coordinates or try again.</p>
     </div>
     {% endif %}
     
