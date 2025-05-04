@@ -14,7 +14,7 @@ def resource_path(relative_path):
 class Config:
     def __init__(self):
         # Use resource_path for all file paths
-        self.model_path = resource_path(os.path.join("models", "solar_model_final.pth"))
+        self.model_path = resource_path(os.path.join("models", "model_final.pth"))
         self.predictions_file = resource_path(os.path.join("data", "predictions.csv"))
         
         # Rest of your config remains the same

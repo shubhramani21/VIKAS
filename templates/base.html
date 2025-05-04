@@ -4,234 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Park Detection</title>
-    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> -->
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block page_css %}{% endblock %}
+
+    {% block predict_css %}{% endblock %}
+
+    {% block history_css %}{% endblock %}
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <!-- jQuery for AJAX -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
-<style>
-    .container {
-        display: flex;
-        min-height: 100vh;
-    }
 
-    main.full-width {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    .sidebar {
-        width: 300px;
-        background: #f8f9fa;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        border-right: 1px solid #dee2e6;
-    }
-
-    .logo-container {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .logo {
-        max-width: 80px;
-        margin-bottom: 10px;
-    }
-
-    .coordinate-form {
-        flex-grow: 1;
-    }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: 500;
-    }
-
-    .form-group input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .btn {
-        padding: 8px 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-weight: 500;
-        font-size: 0.9em;
-        transition: all 0.3s ease;
-        width: 100%;
-        justify-content: center;
-    }
-
-    .btn i {
-        font-size: 14px;
-    }
-
-    .analyze-btn {
-        background-color: #28a745;
-        color: white;
-    }
-
-    .analyze-btn:hover {
-        background-color: #218838;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    .predict-btn {
-        background-color: #17a2b8;
-        color: white;
-    }
-
-    .predict-btn:hover {
-        background-color: #138496;
-        opacity: 0.9;
-    }
-
-    .history-btn-container {
-        margin-top: auto;
-        padding-top: 20px;
-        border-top: 1px solid #dee2e6;
-        text-align: center;
-    }
-
-    .history-btn {
-        background-color: #6c757d;
-        color: white;
-        text-decoration: none;
-        padding: 8px 12px;
-        font-size: 0.9em;
-        max-width: 200px;
-        margin: 0 auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 4px;
-    }
-
-    .history-btn:hover {
-        background-color: #5a6268;
-        opacity: 0.9;
-    }
-
-    .btn:hover {
-        opacity: 0.9;
-    }
-
-    main {
-        flex-grow: 1;
-        padding: 20px;
-        background: white;
-    }
-
-    .messages {
-        list-style: none;
-        padding: 0;
-        margin: 0 0 20px 0;
-    }
-
-    .messages li {
-        padding: 10px;
-        border-radius: 4px;
-        margin-bottom: 10px;
-    }
-
-    .messages .success {
-        background-color: #d4edda;
-        color: #155724;
-    }
-
-    .messages .error {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-
-    .csv-upload-section {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #dee2e6;
-    }
-
-    .btn.upload-btn {
-        background-color: #ff9800;
-        color: white;
-    }
-
-    .btn.upload-btn:hover {
-        background-color: #f57c00;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    .coordinate-count {
-        text-align: center;
-        margin: 15px 0;
-        font-size: 0.9em;
-        color: #666;
-    }
-
-    .predict-all-btn {
-        background-color: #9c27b0;
-        color: white;
-    }
-
-    .predict-all-btn:disabled {
-        background-color: #b39ddb;
-        cursor: not-allowed;
-    }
-
-    .predict-all-btn:hover:not(:disabled) {
-        background-color: #7b1fa2;
-    }
-
-    .btn.clear-btn {
-        background-color: #dc3545;
-        color: white;
-        width: 100%;
-    }
-
-    .btn.clear-btn:hover {
-        background-color: #c82333;
-        opacity: 0.9;
-    }
-
-    .btn.clear-btn:disabled {
-        background-color: #e4606d;
-        cursor: not-allowed;
-    }
-
-    body {
-        flex-direction: column;
-    }
-    {% if show_sidebar %}
-    body {
-        flex-direction: row;
-    }
-    {% endif %}
-</style>
 <body>
     <div class="container">
         {% if show_sidebar|default(true) %}
@@ -346,16 +139,6 @@
                 clearBtn.disabled = count === 0;
             }
         }
-
-        // Predict all coordinates
-        function predictAll() {
-            if ({{ session.coordinates|length }} > 30) {
-                alert('Maximum 30 coordinates allowed for bulk prediction');
-                return;
-            }
-            window.location.href = "{{ url_for('predict_all') }}";
-        }
-
         // Predict single coordinate
         function predictCoordinate() {
             const form = document.getElementById('coord-form');

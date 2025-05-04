@@ -1,4 +1,8 @@
 {% extends 'base.html' %}
+{% block page_css %}
+    <!-- This content will be inserted into the base template's page_css block -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+{% endblock %}
 {% block content %}
 <div id="map" style="height: 350px; width: 100%;"></div>
 
@@ -72,6 +76,7 @@
 <!-- jQuery for AJAX -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize map with optical view
@@ -126,10 +131,11 @@ document.addEventListener('DOMContentLoaded', function() {
         geocoder: L.Control.Geocoder.nominatim()
     }).on('markgeocode', function(e) {
         const center = e.geocode.center;
-        map.panTo(center, 16);
+        map.setView(center, 16);  // Changed from panTo to setView with zoom level
         document.getElementById('lat').value = center.lat.toFixed(6);
         document.getElementById('lon').value = center.lng.toFixed(6);
     }).addTo(map);
+
 
     // Auto-hide success messages
     setTimeout(() => {
@@ -288,263 +294,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<style>
-    /* Loading Screen */
-    .loading-screen {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-    }
 
-    .loading-content {
-        background: white;
-        padding: 20px 30px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .loading-content i {
-        color: #17a2b8;
-        margin-bottom: 15px;
-    }
-
-    .loading-content p {
-        margin: 0;
-        font-size: 1.1rem;
-        color: #333;
-    }
-
-    /* Error Message */
-    .error-message {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        border-radius: 5px;
-        border: 1px solid #f5c6cb;
-        transition: opacity 1s;
-        opacity: 1;
-        text-align: center;
-        margin: 10px 0;
-    }
-
-    /* General Container */
-    .coordinates-container {
-        margin: 20px 0;
-        max-width: 1200px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    /* Coordinate Card */
-    .coordinate-card {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 15px;
-        padding: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: transform 0.2s ease;
-    }
-
-    .coordinate-card:hover {
-        transform: translateY(-2px);
-    }
-
-    .coord-info {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 8px 15px;
-        align-items: center;
-    }
-
-    .coord-label {
-        font-size: 0.9rem;
-        color: #666;
-    }
-
-    .coord-value {
-        font-weight: 500;
-        color: #333;
-    }
-
-    .coord-actions {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-    }
-
-    /* Button Styles */
-    .predict-btn, .delete-btn {
-        padding: 8px 16px;
-        font-size: 0.9rem;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        color: white;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .predict-btn {
-        background: #17a2b8;
-    }
-
-    .predict-btn:hover {
-        background: #138496;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    .predict-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .delete-btn {
-        background: #dc3545;
-    }
-
-    .delete-btn:hover {
-        background: #c82333;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
-
-    .delete-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .predict-btn i, .delete-btn i {
-        font-size: 1rem;
-    }
-
-    /* Predict All Button */
-    .predict-all-container {
-        margin: 20px 0;
-        text-align: center;
-    }
-
-    .predict-all-btn {
-        background: #28a745;
-        color: white;
-        padding: 12px 25px;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .predict-all-btn:hover {
-        background: #218838;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .predict-all-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .predict-all-btn i {
-        font-size: 1rem;
-    }
-
-    /* No Coordinates Message */
-    .no-coordinates {
-        text-align: center;
-        color: #6c757d;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        margin: 20px 0;
-        font-size: 1rem;
-    }
-
-    /* Flash Messages */
-    .flash-container {
-        margin: 15px 0;
-        min-height: 50px;
-    }
-
-    .success-message {
-        background: #d4edda;
-        color: #155724;
-        padding: 15px;
-        border-radius: 5px;
-        border: 1px solid #c3e6cb;
-        transition: opacity 1s;
-        opacity: 1;
-        text-align: center;
-    }
-
-    /* Temporary Marker */
-    .temp-marker {
-        background: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        border: 2px solid #0078A8;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        font-weight: bold;
-        text-align: center;
-        color: #0078A8;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .coordinate-card {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 12px;
-        }
-
-        .coord-actions {
-            margin-top: 12px;
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .predict-btn, .delete-btn {
-            width: 48%;
-            padding: 10px;
-            font-size: 0.85rem;
-        }
-
-        .predict-all-btn {
-            width: 100%;
-            padding: 12px;
-        }
-
-        .no-coordinates {
-            margin: 15px 0;
-            padding: 15px;
-        }
-
-        .loading-content {
-            padding: 15px 20px;
-        }
-
-        .loading-content p {
-            font-size: 1rem;
-        }
-    }
-</style>
 {% endblock %}

@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block predict_css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/predict.css') }}"> {% endblock %}
+
 {% block content %}
 <div class="predictions-container">
     <h2>Prediction Result</h2>
@@ -23,7 +25,7 @@
                 <div class="result-text">
                     <span class="result-label">{{ label }}</span>
                     <div class="confidence-display">
-                        <span class="confidence-value">{{ (confidence * 100)|round(1) }}%</span>
+                        <span class="confidence-value">Confidance: {{ (confidence * 100)|round(1) }}%</span>
                         <div class="confidence-bar">
                             <div class="confidence-fill" style="width: {{ confidence * 100 }}%"></div>
                         </div>
@@ -38,137 +40,5 @@
     </a>
 </div>
 
-<style>
-.predictions-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 2rem;
-}
 
-.prediction-card {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    display: grid;
-    grid-template-columns: 250px 1fr;
-    gap: 1.5rem;
-}
-
-.prediction-image {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
-}
-
-.satellite-img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border: 2px solid #e0e0e0;
-}
-
-.result-card {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
-}
-
-.solar-detected {
-    background: #e8f5e9;
-    border: 1px solid #81c784;
-}
-
-.no-solar {
-    background: #ffebee;
-    border: 1px solid #ef9a9a;
-}
-
-.result-icon {
-    font-size: 2rem;
-    margin-right: 1rem;
-}
-
-.result-label {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.confidence-display {
-    margin-top: 1rem;
-}
-
-.confidence-bar {
-    height: 8px;
-    background: #eeeeee;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.confidence-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4caf50, #81c784);
-    transition: width 0.5s ease;
-}
-
-.confidence-value {
-    font-size: 0.9rem;
-    color: #666;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.8rem 1.5rem;
-    background: #2196f3;
-    color: white;
-    text-decoration: none;
-    border-radius: 25px;
-    transition: transform 0.2s;
-}
-
-.back-btn:hover {
-    transform: translateY(-2px);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .predictions-container {
-        padding: 1rem;
-    }
-
-    .prediction-card {
-        grid-template-columns: 1fr;
-        padding: 1rem;
-    }
-
-    .prediction-image {
-        width: 100%;
-    }
-
-    .satellite-img {
-        height: 150px;
-    }
-
-    .result-card {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .result-icon {
-        margin-bottom: 0.5rem;
-        margin-right: 0;
-    }
-
-    .back-btn {
-        width: 100%;
-        justify-content: center;
-    }
-}
-</style>
 {% endblock %}
