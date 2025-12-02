@@ -1,10 +1,22 @@
 import io
-import base64
-import numpy as np
+import os
 import time
+import base64
+import logging
+from datetime import datetime
+
+from PIL import Image
+import cv2
+import torch
+from torchvision import transforms
+
 from PIL import Image
 
-from utils import get_image, predict_image, save_prediction
+import numpy as np
+import pandas as pd
+
+
+from app.services.satellite_img_service import get_image
 
 # Perfect
 def image_to_base64(image_np):
@@ -84,3 +96,54 @@ def run_prediction_batch(model, coords, cfg, sleep_seconds):
     return {
         "predictions": results
     }
+
+def predict_image(img_np, model, threshold=0.49):
+    """Enhanced with better error handling and debug info"""
+    try:
+        if not isinstance(img_np, np.ndarray):
+            raise ValueError("Input must be a numpy array")
+            
+        # Convert and validate image
+        img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
+        if img_rgb.shape[2] != 3:
+            raise ValueError(f"Expected 3 channels, got {img_rgb.shape[2]}")
+            
+        # Preprocessing pipeline
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(model.cfg.image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                               std=[0.229, 0.224, 0.225])
+        ])
+        
+        img_tensor = transform(img_rgb).unsqueeze(0).to(model.cfg.device)
+        
+        with torch.no_grad():
+            output = model(img_tensor)
+            probs = torch.softmax(output, dim=1)
+            confidence = probs[0, 1].item()
+            label = "Solar Panel" if confidence > threshold else "Not a Solar Panel"
+            
+            # Debug info
+            logging.debug(f"Prediction - Label: {label}, Confidence: {confidence:.4f}")
+            
+        return label, confidence
+        
+    except Exception as e:
+        logging.error(f"Prediction error: {str(e)}", exc_info=True)
+        return "Error", 0.0
+
+def save_prediction(lat, lon, label, confidence, file_path):
+    data = {
+        'Latitude': lat,
+        'Longitude': lon,
+        'Label': label,
+        'Confidence': confidence,
+        'Timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    df = pd.DataFrame([data])
+    if os.path.exists(file_path):
+        df.to_csv(file_path, mode='a', header=False, index=False)
+    else:
+        df.to_csv(file_path, mode='w', header=True, index=False)

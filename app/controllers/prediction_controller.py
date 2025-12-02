@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from flask import session
-from app.utils.helper import get_response, is_ajax, validate_latlon
+from app.utils.helper import get_response, validate_latlon
 from app.services.prediction_service import run_prediction, run_prediction_batch, coordinates_match
 
 class PredictionController:
