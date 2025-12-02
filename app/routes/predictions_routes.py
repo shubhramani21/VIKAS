@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
 from app.controllers.prediction_controller import PredictionController
 
-prediction_bp = Blueprint('prediction', __name__, url_prefix="/prediction")
+prediction_bp = Blueprint('predict', __name__, url_prefix="/predict")
 
 
-@prediction_bp.route('/', methods=['POST'])
-def predict_coordinate():
+@prediction_bp.route('/single', methods=['POST'])
+def predict_single():
     model = current_app.model
     cfg = current_app.config
 
@@ -49,13 +49,13 @@ def predict_batch():
 
     if result.get("type") == "error":
         flash(result["message"], "error")
-        return redirect(url_for("map"))
+        return redirect(url_for("static.map_view"))
 
 
     # ERROR (normal)
     if result.get("error"):
         flash(result["message"], "error")
-        return redirect(url_for("map"))
+        return redirect(url_for("static.map_view"))
 
     # SUCCESS (normal)
     return render_template(
@@ -98,7 +98,7 @@ def clear_history():
     if result.get("type") == "error":
         flash(result["message"], "error")
 
-    return redirect(url_for("prediction"))
+    return redirect(url_for("predict.load_history"))
 
 @prediction_bp.route('/download', methods=['GET'])
 def download_history():
@@ -109,7 +109,7 @@ def download_history():
     result = PredictionController.download_history(file_path)
     if result.get("type") == "error":
         flash(result["message"], "error")
-        return redirect(url_for("prediction"))
+        return redirect(url_for("predict.load_history"))
     
     send_file_kwargs = result.get("response", {})
     

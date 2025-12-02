@@ -19,7 +19,7 @@ def add_coordinate_route():
         return jsonify(result["response"]), result["status_code"]    
     
 
-    return redirect(url_for("map"))
+    return redirect(url_for("static.map_view"))
 
 
 @coordinate_bp.route("/delete", methods=["POST"])
@@ -34,7 +34,7 @@ def delete_coordinate_route():
 
     flash(result['response']['message'], result['type'])
 
-    return redirect(url_for("map"))
+    return redirect(url_for("static.map_view"))
 
 
 @coordinate_bp.route("/clear", methods=["POST"])
@@ -46,7 +46,7 @@ def clear_coordinates_route():
 
     flash(result['message'], result['type'])
 
-    return redirect(url_for("map"))
+    return redirect(url_for("static.map_view"))
 
 
 @coordinate_bp.route("/upload", methods=["POST"])
@@ -61,6 +61,6 @@ def upload_coordinates_route():
 
     flash(result['message'], result['type'])
 
-    return redirect(url_for("map"))
+    return redirect(url_for("static.map_view"))
 
     

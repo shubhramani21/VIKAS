@@ -13,7 +13,7 @@ def index():
         cfg = current_app.config
         session['map_center'] = {'lat': cfg.map_default['lat'], 'lon': cfg.map_default['lon']}
 
-    return redirect(url_for('map'))
+    return redirect(url_for('static.map_view'))
 
 @static_bp.route('/static/<path:filename>')
 def serve_static(filename):
@@ -51,6 +51,6 @@ def search_location():
     except (ValueError, KeyError):
         flash('Invalid coordinates provided for search.', 'error')
 
-    return redirect(url_for('map'))
+    return redirect(url_for('static.map_view'))
 
 

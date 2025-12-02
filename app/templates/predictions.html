@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block history_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}"> {% endblock %}
+
+{% block content %}
+<div class="predictions-container">
+    <h1>Prediction History</h1>
+    <div class="controls">
+
+        <div class="download-container">
+            <a href="{{ url_for('predict.download_history') if predictions else '#' }}" 
+               class="btn download-btn {% if not predictions %}disabled{% endif %}"
+               {% if not predictions %}onclick="return false;"{% endif %}>
+                <i class="fas fa-file-csv"></i> Download CSV
+            </a>
+        </div>
+
+        <div class="clear-container">
+            <form method="POST" action="{{ url_for('predict.clear_history') if predictions else '#' }}" 
+                  onsubmit="return {% if predictions %}confirmClear(){% else %}false{% endif %}">
+                <button type="submit" class="btn clear-btn {% if not predictions %}disabled{% endif %}"
+                        {% if not predictions %}disabled{% endif %}>
+                    <i class="fas fa-trash"></i> Clear All Predictions
+                </button>
+            </form>
+        </div>
+
+    </div>
+    {% if predictions %}
+    <div class="table-container">
+        <table class="predictions-table" border="1" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Label</th>
+                    <th>Confidence</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pred in predictions %}
+                <tr>
+                    <td>{{ pred.latitude | default('N/A') | round(6, 'floor') if pred.latitude is defined and pred.latitude is number else 'N/A' }}</td>
+                    <td>{{ pred.longitude | default('N/A') | round(6, 'floor') if pred.longitude is defined and pred.longitude is number else 'N/A' }}</td>
+                    <td>{{ pred.label | default('N/A') }}</td>
+                    <td>{{ pred.confidence | default('N/A') | round(4, 'floor') if pred.confidence is defined and pred.confidence is number else 'N/A' }}</td>
+                    <td>{{ pred.timestamp | default('N/A') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-predictions">
+        <i class="fas fa-exclamation-circle"></i>
+        <p>No prediction history found.</p>
+        <!-- {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %} -->
+    </div>
+    {% endif %}
+    <a href="{{ url_for('static.map_view') }}" class="back-btn">Back to Map</a>
+</div>
+
+<script>
+    function confirmClear() {
+        return confirm('Are you sure you want to delete all prediction history? This action cannot be undone!');
+    }
+</script>
+
+{% endblock %}
