@@ -1,36 +1,37 @@
 from flask import Blueprint, render_template, redirect, url_for, session, current_app, send_from_directory, flash, request
-from app.utils.helper import resource_path, validate_latlon
+from app.utils.helper import validate_latlon
 
-static_bp = Blueprint('static', __name__)
+static_bp = Blueprint('pages', __name__)
 
 @static_bp.route('/')
 def index():
     """ Home page -> redirect to map """
-    if 'coordinates' not in session:
-        session['coordinates'] = []
 
-    if 'map_center' not in session:
-        cfg = current_app.config
-        session['map_center'] = {'lat': cfg.map_default['lat'], 'lon': cfg.map_default['lon']}
+    cfg = current_app.config["APP_CONFIG"]
 
-    return redirect(url_for('static.map_view'))
-
-@static_bp.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(resource_path('static'), filename)
+    session.setdefault('coordinates', [])
+    session.setdefault('map_center',{
+        'lat': cfg.map_default['lat'],
+        'lon': cfg.map_default['lon']
+    })
+    
+    return redirect(url_for('pages.map_view'))
 
 
 @static_bp.route('/map')
 def map_view():
     ''' Renders the map view with stored coordinates and center '''
-    cfg = current_app.config
+    cfg = current_app.config["APP_CONFIG"]
 
     # Get coordinates and map center from session
     coords = session.get('coordinates', [])
-    center = session.get('map_center', {'lat': cfg.map_default['lat'], 'lon': cfg.map_default['lon']})
+    center = session.get('map_center', {
+        'lat': cfg.map_default['lat'], 
+        'lon': cfg.map_default['lon']
+    })
 
     return render_template("map.html",
-                           coordinates=[{"lat": c[0], "lon": c[1]} for c in coords],
+                           coordinates=coords,
                            map_center=center,
                            zoom=cfg.map_default['zoom'])
 
@@ -51,6 +52,6 @@ def search_location():
     except (ValueError, KeyError):
         flash('Invalid coordinates provided for search.', 'error')
 
-    return redirect(url_for('static.map_view'))
+    return redirect(url_for('pages.map_view'))
 
 

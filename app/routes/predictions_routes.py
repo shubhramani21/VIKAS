@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify, send_file
 from app.controllers.prediction_controller import PredictionController
+from app.utils.helper import _return_json
 
 prediction_bp = Blueprint('predict', __name__, url_prefix="/predict")
 
@@ -7,7 +8,7 @@ prediction_bp = Blueprint('predict', __name__, url_prefix="/predict")
 @prediction_bp.route('/single', methods=['POST'])
 def predict_single():
     model = current_app.model
-    cfg = current_app.config
+    cfg = current_app.config["APP_CONFIG"]
 
     lat = request.form.get('lat')
     lon = request.form.get('lon')
@@ -15,10 +16,11 @@ def predict_single():
     result = PredictionController.predict_single(lat, lon, model, cfg)
 
     if result.get("type") == "ajax":
-        return jsonify(result['response'])
+        return _return_json(result.get("response", {}), result.get("status_code"))
     
     if result.get("type") == "error_coordinates":
-        flash(result['message'], "error")
+        flash(result.get("message", "Invalid coordinates."), "error")
+        return redirect(url_for("pages.map_view"))
     
     if result.get("type") == "error_response":
         flash(result['message'], "error")
@@ -42,41 +44,42 @@ def predict_batch():
     """Predict all coordinates stored in session"""
     coords = session.get("coordinates", [])
 
-    cfg = current_app.config
+    cfg = current_app.config["APP_CONFIG"]
     model = current_app.model
 
     result = PredictionController.predict_batch(model,coords,cfg)
 
+    if result.get("type") == "ajax":
+        return _return_json(result.get("response", {}), result.get("status_code"))
+
     if result.get("type") == "error":
-        flash(result["message"], "error")
-        return redirect(url_for("static.map_view"))
-
-
-    # ERROR (normal)
-    if result.get("error"):
-        flash(result["message"], "error")
-        return redirect(url_for("static.map_view"))
+        flash(result.get("message", "Failed to run batch prediction."), "error")
+        return redirect(url_for("pages.map_view"))
+    
+    try:
+        predictions_results = result.get("response", {}).get("predictions", [])
+    except Exception:
+        flash("Failed to process prediction results.", "error")
+        return redirect(url_for("pages.map_view"))
 
     # SUCCESS (normal)
     return render_template(
         "predict_all.html",
         show_sidebar=False,
-        predictions=result["predictions"]
+        predictions=predictions_results
     )
 
 @prediction_bp.route('/history', methods=['GET'])
 def load_history():
     """Load predictions from file"""
 
-    cfg = current_app.config
+    cfg = current_app.config['APP_CONFIG']
 
     result = PredictionController.load_history(cfg)
 
-    if result.get("type") == "error":
-        flash(result["message"], "error")
-
-    if result.get("type") == "warning":
-        flash(result["message"], "warning")
+    # Error or warning
+    if result.get("type") in ["error", "warning"]:
+        flash(result["message"], result["type"])
 
     return render_template(
         'predictions.html',
@@ -91,31 +94,27 @@ def clear_history():
 
     result = PredictionController.clear_history(cfg, request)
 
-    # Normal request
-    if result.get("type") == "success":
-        flash(result["message"], "success")
-    
-    if result.get("type") == "error":
-        flash(result["message"], "error")
+    flash(result.get("message"), result.get("type"))
 
     return redirect(url_for("predict.load_history"))
 
 @prediction_bp.route('/download', methods=['GET'])
 def download_history():
     """Download the predictions CSV file."""
-    cfg = current_app.config
+    cfg = current_app.config["APP_CONFIG"]
     file_path = cfg.predictions_file
 
     result = PredictionController.download_history(file_path)
+
     if result.get("type") == "error":
         flash(result["message"], "error")
         return redirect(url_for("predict.load_history"))
     
-    send_file_kwargs = result.get("response", {})
+    args = result.get("response", {})
     
     return send_file(
-        send_file_kwargs["file_path"],
-        mimetype=send_file_kwargs["mime_type"],
-        download_name=send_file_kwargs["download_name"],
-        as_attachment=send_file_kwargs["as_attachment"]
+        args["file_path"],
+        mimetype=args["mime_type"],
+        download_name=args["download_name"],
+        as_attachment=args["as_attachment"]
     )

@@ -5,20 +5,16 @@ import base64
 import logging
 from datetime import datetime
 
-from PIL import Image
 import cv2
 import torch
-from torchvision import transforms
-
-from PIL import Image
-
 import numpy as np
 import pandas as pd
-
+from PIL import Image
+from torchvision import transforms
 
 from app.services.satellite_img_service import get_image
 
-# Perfect
+
 def image_to_base64(image_np):
     """Converts image to base64 string"""
     pil_img = Image.fromarray(image_np.astype('uint8'))
@@ -29,7 +25,7 @@ def image_to_base64(image_np):
 
 
 def fetch_satellite_image(lat, lon, cfg):
-    """FFetch satellite image using app.utils.get_image. Returns ndarray or None."""
+    """Fetch satellite image using app.utils.get_image. Returns ndarray or None."""
 
     image = get_image(lat, lon, cfg.zoom_level)
     
@@ -58,9 +54,8 @@ def run_prediction(model, lat, lon, cfg):
     # 3. save prediction to CSV (append)
     try:
         save_prediction(lat, lon, label, confidence, cfg.predictions_file)
-    except Exception:
-        # don't fail the request just because CSV saving failed; still return prediction
-        pass
+    except Exception as e:
+        logging.error(f"Failed to save prediction CSV: {str(e)}")
 
     # 4. encode image for UI
     image_base64 = image_to_base64(image)
@@ -76,7 +71,10 @@ def run_prediction_batch(model, coords, cfg, sleep_seconds):
     """
 
     results = []
-    for lat, lon in coords:
+    for c in coords:
+        lat = c.get("lat")
+        lon = c.get("lon")
+
         img_b64, label, confidence = run_prediction(model, lat, lon, cfg)
 
         if img_b64 is None:
@@ -91,7 +89,9 @@ def run_prediction_batch(model, coords, cfg, sleep_seconds):
             "image_base64": img_b64
         })
 
-        time.sleep(sleep_seconds)
+        if sleep_seconds > 0:
+            time.sleep(sleep_seconds)
+
 
     return {
         "predictions": results
@@ -105,6 +105,7 @@ def predict_image(img_np, model, threshold=0.49):
             
         # Convert and validate image
         img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
+
         if img_rgb.shape[2] != 3:
             raise ValueError(f"Expected 3 channels, got {img_rgb.shape[2]}")
             
@@ -113,8 +114,10 @@ def predict_image(img_np, model, threshold=0.49):
             transforms.ToPILImage(),
             transforms.Resize(model.cfg.image_size),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                               std=[0.229, 0.224, 0.225])
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], 
+                std=[0.229, 0.224, 0.225]
+            )
         ])
         
         img_tensor = transform(img_rgb).unsqueeze(0).to(model.cfg.device)
@@ -125,8 +128,6 @@ def predict_image(img_np, model, threshold=0.49):
             confidence = probs[0, 1].item()
             label = "Solar Panel" if confidence > threshold else "Not a Solar Panel"
             
-            # Debug info
-            logging.debug(f"Prediction - Label: {label}, Confidence: {confidence:.4f}")
             
         return label, confidence
         
@@ -142,7 +143,9 @@ def save_prediction(lat, lon, label, confidence, file_path):
         'Confidence': confidence,
         'Timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
+    
     df = pd.DataFrame([data])
+
     if os.path.exists(file_path):
         df.to_csv(file_path, mode='a', header=False, index=False)
     else:

@@ -9,19 +9,20 @@ class PredictionController:
 
     @staticmethod
     def predict_single(lat, lon, model, cfg):
-        """
-        Orchestrates a single coordinate prediction.
-        Returns either a json_response-like dict (when request provided) OR a plain result dict.
-        """
+        """Predict a single coordinate."""
+
+        # Validate coordinate
         try:
             lat, lon = validate_latlon(lat, lon)
         except ValueError:
             return get_response("Invalid coordinates.", "error_coordinates", 400)
-        # Update session 
+        
+        # Update session map center
         session["map_center"] = {"lat": lat, "lon": lon}
+        existing = session.get("coordinates", [])
         session["coordinates"] = [
-            c for c in session.get("coordinates", [])
-            if not coordinates_match(c, lat, lon)
+            c for c in existing
+            if not coordinates_match((c["lat"], c["lon"]), lat, lon)
         ]
         session.modified = True
 
@@ -38,7 +39,6 @@ class PredictionController:
             'label': label,
             'confidence': confidence,
             "image_base64": image_base64
-
         }
         return get_response(
             "Prediction completed",
@@ -59,28 +59,21 @@ class PredictionController:
         if len(coords) > PredictionController.MAX_LIMIT:
             return get_response(f"Maximum {PredictionController.MAX_LIMIT} coordinates allowed.", "error", 400)
         
-       
         try:
-
             batch = run_prediction_batch(model, coords, cfg, sleep_seconds=1)
         except:
-            return get_response("Failed to run batch prediction.", "error", 500)
+            return get_response(f"Failed to run batch prediction. {str(e)}", "error", 500)
 
         session["coordinates"] = []
         session.modified = True
 
-        
-        extras = {
-            "predictions": batch["predictions"]
-        }
-        
         # Normal page render
         return get_response(
             "Prediction completed",
             "success",
             200,
             False,
-            extras
+            { "predictions": batch["predictions"] }
         )
     
     @staticmethod
@@ -102,7 +95,6 @@ class PredictionController:
                 return get_response("Predictions file is corrupted or has invalid format.", "error", 500)
 
             df = df.dropna(subset=required)
-
             predictions = df.to_dict("records")
 
             if not predictions:
@@ -111,7 +103,7 @@ class PredictionController:
             return get_response("Predictions loaded.", "success", 200, False, {"predictions": predictions})
         
         except:
-            return get_response("Failed to load predictions.", "error", 500)
+            return get_response(f"Failed to load predictions: {str(e)}", "error", 500)
         
 
     @staticmethod
@@ -124,8 +116,8 @@ class PredictionController:
             if not os.path.exists(file_path):
                 return get_response("No predictions found.", "error", 404)
 
-            original_df = pd.read_csv(file_path)
-            columns_names = original_df.columns.tolist()
+            df = pd.read_csv(file_path)
+            columns_names = df.columns.tolist()
             empty_df = pd.DataFrame(columns=columns_names)
 
             empty_df.to_csv(file_path, index=False)
@@ -138,10 +130,7 @@ class PredictionController:
             
             
         except Exception as e:
-            return {
-                "type": "error",
-                "message": f"Error clearing predictions: {str(e)}"
-            }
+            return get_response(f"Error clearing predictions: {str(e)}", "error", 500)
 
     @staticmethod
     def download_history(file_path):

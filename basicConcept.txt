@@ -22,4 +22,16 @@
 | GET    | `/api/map` | Return coordinates + center |
 
 
+7. coordinate_routes.py
+to be FIxed :
+✔ FULLY reviewed
+✔ Corrected version provided
+⚠ FIXES applied:
 
+wrong redirect
+
+wrong access to result keys
+
+consistent AJAX handling
+
+proper _return_json usage

@@ -1,7 +1,7 @@
 import os 
 from flask import Flask
 from config import Config
-from app.models import load_model
+from ml.loader import load_model
 from app.utils.helper import resource_path
 
 def create_app():
@@ -19,17 +19,18 @@ def create_app():
     # 2. Load configuration
     config = Config()
     app.config.from_object(config)
+    app.config["APP_CONFIG"] = config 
 
 
     # 3. Load ML Model ONCE
-    app.model = load_model(app.config)
+    app.model = load_model(config)
 
     if app.model is None:
         print("Error: Model could not be loaded.")
     
     # 4. Register Blueprints
 
-    from app.routes.static_routes import static_bp
+    from app.routes.page_routes import static_bp
     from app.routes.coordinate_routes import coordinate_bp
     from app.routes.predictions_routes import prediction_bp
 

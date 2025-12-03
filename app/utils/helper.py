@@ -1,7 +1,10 @@
 import os
 import sys
+from flask import jsonify
 
 
+def _return_json(payload, status_code=200):
+    return jsonify(payload), status_code
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -43,12 +46,15 @@ def get_response(message, status, status_code, isAjax=False, extra = None):
     }
 
 def validate_latlon(lat, lon):
-    """Returns True if lat lon value is valid, False otherwise"""
     try:
-        return float(lat), float(lon) 
-    except:
+        lat = float(lat)
+        lon = float(lon)
+        return lat, lon
+    except ValueError:
         raise ValueError("Invalid latitude or longitude")
+
     
-def coordinates_match(c, lat, lon):
-    return abs(c[0] - lat) < 0.0001 and abs(c[1] - lon) < 0.0001
+def coordinates_match(c, lat, lon, tolerance=0.0001):
+    return abs(c[0] - lat) < tolerance and abs(c[1] - lon) < tolerance
+
 
