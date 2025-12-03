@@ -1,6 +1,5 @@
 from flask import session
 from app.utils.helper import is_ajax, get_response, validate_latlon, coordinates_match
-
 import pandas as pd
 
 
@@ -15,13 +14,11 @@ class CoordinateController:
         try:
             lat, lon = validate_latlon(lat, lon)
         except ValueError:
-            return get_response("Invalid coordinates. Please enter valid numbers.", "error", 400, is_ajax(request)
-                                )
-    
+            return get_response("Invalid coordinates. Please enter valid numbers.", "error", 400, is_ajax(request))
+
         if len(coordinates) >= CoordinateController.MAX_LIMIT:
             return get_response(f"Maximum {CoordinateController.MAX_LIMIT} coordinates allowed.", "error", 400, is_ajax(request))
-        
-        
+
         if any(coordinates_match(c, lat, lon) for c in coordinates):
             return get_response("Coordinate already exists.", "warning", 400, is_ajax(request))
             
@@ -31,7 +28,13 @@ class CoordinateController:
         session["map_center"] = {"lat": lat, "lon": lon}
         session.modified = True
 
-        return get_response("Coordinate added successfully!", "success", 200, is_ajax(request))
+        return get_response(
+            "Coordinate added successfully!",
+            "success",
+            200,
+            is_ajax(request),
+            {"lat": lat, "lon": lon}
+        )
 
     @staticmethod
     def delete_coordinate(lat, lon):

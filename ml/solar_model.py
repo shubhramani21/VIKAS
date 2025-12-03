@@ -4,6 +4,7 @@ import timm
 class SolarModel(torch.nn.Module):
     def __init__(self, cfg):
         super().__init__()
+        self.cfg = cfg
         self.backbone = timm.create_model(
             cfg.model_name,
             pretrained=False,
