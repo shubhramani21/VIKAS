@@ -18,7 +18,6 @@ def create_app():
 
     # 2. Load configuration
     config = Config()
-    app.config.from_object(config)
     app.config["APP_CONFIG"] = config 
 
 

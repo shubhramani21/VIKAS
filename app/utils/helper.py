@@ -28,6 +28,9 @@ def get_response(message, status, status_code, isAjax=False, extra = None):
             "message": message # Prediction completed
         }
 
+        if extra is not None:
+            response.update(extra)
+
         return {
             "type": "ajax",
             "status_code" : status_code, # 200
@@ -55,6 +58,17 @@ def validate_latlon(lat, lon):
 
     
 def coordinates_match(c, lat, lon, tolerance=0.0001):
-    return abs(c[0] - lat) < tolerance and abs(c[1] - lon) < tolerance
+    """
+    Compare coordinates with tolerance.
+    Supports:
+        - dict  -> {"lat": X, "lon": Y}
+        - tuple -> (lat, lon)
+        - list  -> [lat, lon]
+    """
 
+    if isinstance(c, dict):
+        clat, clon = c["lat"], c["lon"]
+    else:
+        clat, clon = c[0], c[1]
 
+    return abs(clat - lat) < tolerance and abs(clon - lon) < tolerance

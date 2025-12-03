@@ -90,7 +90,7 @@ def load_history():
 @prediction_bp.route('/clear', methods=['POST'])
 def clear_history():
     """Clear all predictions from file"""
-    cfg = current_app.config
+    cfg = current_app.config["APP_CONFIG"]
 
     result = PredictionController.clear_history(cfg, request)
 

@@ -56,12 +56,12 @@ class PredictionController:
         if not coords:
             return get_response("No coordinates to predict.", "error", 400)
 
-        if len(coords) > PredictionController.MAX_LIMIT:
+        if len(coords) >= PredictionController.MAX_LIMIT:
             return get_response(f"Maximum {PredictionController.MAX_LIMIT} coordinates allowed.", "error", 400)
         
         try:
             batch = run_prediction_batch(model, coords, cfg, sleep_seconds=1)
-        except:
+        except Exception as e:
             return get_response(f"Failed to run batch prediction. {str(e)}", "error", 500)
 
         session["coordinates"] = []
@@ -102,7 +102,7 @@ class PredictionController:
             
             return get_response("Predictions loaded.", "success", 200, False, {"predictions": predictions})
         
-        except:
+        except Exception as e:
             return get_response(f"Failed to load predictions: {str(e)}", "error", 500)
         
 

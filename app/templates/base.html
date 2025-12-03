@@ -202,8 +202,13 @@
                 success: (response) => {
                     // Show success message
                     showFlashMessage(response.message, 'success');
+
+                    // RESET COORDINATE COUNT
+                    document.getElementById('coord-count').textContent = '0';
+                    updateCoordinateCount();
+                    
                     // Redirect to map page to refresh
-                    window.location.href = "{{ url_for('static.map_view') }}";
+                    window.location.href = "{{ url_for('pages.map_view') }}";
                 },
                 error: (xhr) => {
                     button.innerHTML = '<i class="fas fa-eraser"></i> Clear All Coordinates';

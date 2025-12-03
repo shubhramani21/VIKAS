@@ -1,27 +1,27 @@
 {% extends 'base.html' %}
 
 {% block predict_css %}
-    <!-- This content will be inserted into the base template's page_css block -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/predict.css') }}">
+<!-- This content will be inserted into the base template's page_css block -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/predict.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="predictions-container">
     <h2>Batch Prediction Results</h2>
-    
+
     {% if predictions %}
     {% for prediction in predictions %}
     <div class="prediction-card">
         <div class="prediction-image">
-            <img src="data:image/jpeg;base64,{{ prediction.image_base64 }}" 
-                 alt="Satellite image of {{ prediction.lat|round(6) }}, {{ prediction.lon|round(6) }}"
-                 class="satellite-img">
+            <img src="data:image/jpeg;base64,{{ prediction.image_base64 }}"
+                alt="Satellite image of {{ prediction.lat|round(6) }}, {{ prediction.lon|round(6) }}"
+                class="satellite-img">
         </div>
         <div class="prediction-details">
             <h3>📍 Coordinates: {{ "%.6f"|format(prediction.lat) }}, {{ "%.6f"|format(prediction.lon) }}</h3>
-            <div class="result-card {{ 'solar-detected' if 'Solar' in prediction.label else 'no-solar' }}">
+            <div class="result-card {{ 'solar-detected' if 'solar' in prediction.label|lower else 'no-solar' }}">
                 <div class="result-icon">
-                    {% if 'Solar' in prediction.label %}
+                    {% if 'solar' in prediction.label|lower %}
                     <i class="fas fa-solar-panel"></i>
                     {% else %}
                     <i class="fas fa-times-circle"></i>
@@ -46,8 +46,8 @@
         <p>No predictions were generated. Please check your coordinates or try again.</p>
     </div>
     {% endif %}
-    
-    <a href="{{ url_for('static.map_view') }}" class="back-btn">
+
+    <a href="{{ url_for('pages.map_view') }}" class="back-btn">
         <i></i> Back to Map
     </a>
 </div>

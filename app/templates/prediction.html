@@ -14,9 +14,9 @@
         </div>
         <div class="prediction-details">
             <h3>📍 Coordinates: {{ "%.6f"|format(lat) }}, {{ "%.6f"|format(lon) }}</h3>
-            <div class="result-card {{ 'solar-detected' if 'Solar' in label else 'no-solar' }}">
+            <div class="result-card {{ 'solar-detected' if 'solar' in label|lower else 'no-solar' }}">
                 <div class="result-icon">
-                    {% if 'Solar' in label %}
+                    {% if 'solar' in label|lower %}
                     <i class="fas fa-solar-panel"></i>
                     {% else %}
                     <i class="fas fa-times-circle"></i>
@@ -35,7 +35,7 @@
         </div>
     </div>
     
-    <a href="{{ url_for('static.map_view') }}" class="back-btn">
+    <a href="{{ url_for('pages.map_view') }}" class="back-btn">
         <i></i> Back to Map
     </a>
 </div>

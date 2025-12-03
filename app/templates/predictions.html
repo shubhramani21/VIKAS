@@ -41,11 +41,11 @@
             <tbody>
                 {% for pred in predictions %}
                 <tr>
-                    <td>{{ pred.latitude | default('N/A') | round(6, 'floor') if pred.latitude is defined and pred.latitude is number else 'N/A' }}</td>
-                    <td>{{ pred.longitude | default('N/A') | round(6, 'floor') if pred.longitude is defined and pred.longitude is number else 'N/A' }}</td>
+                    <td>{{ pred.latitude | float | round(6) }}</td>
+                    <td>{{ pred.longitude | float | round(6) }}</td>
                     <td>{{ pred.label | default('N/A') }}</td>
-                    <td>{{ pred.confidence | default('N/A') | round(4, 'floor') if pred.confidence is defined and pred.confidence is number else 'N/A' }}</td>
-                    <td>{{ pred.timestamp | default('N/A') }}</td>
+                    <td>{{ (pred.confidence * 100) | float | round(1) }}%</td>
+                    <td>{{ pred.timestamp }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -62,7 +62,7 @@
         {% endwith %} -->
     </div>
     {% endif %}
-    <a href="{{ url_for('static.map_view') }}" class="back-btn">Back to Map</a>
+    <a href="{{ url_for('pages.map_view') }}" class="back-btn">Back to Map</a>
 </div>
 
 <script>
