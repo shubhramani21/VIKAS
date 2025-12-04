@@ -1,6 +1,9 @@
 # --- Python ---
 app/data/*
 !app/data/.gitkeep
+
+!models/.gitkeep
+
 __pycache__/
 *.pyc
 *.pyo
