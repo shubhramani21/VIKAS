@@ -1,14 +1,35 @@
-/.venv
-/__pycache__
-/models
-/app/__pycache__
-/app/controllers/__pycache__
-/app/routes/__pycache__
-/app/static/__pycache__
-/app/templates/__pycache__
-/app/services/__pycache__
-/app/utils/__pycache__
-ml/__pycache__
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-.vscode
-models
+# --- Virtual Environment ---
+.venv/
+venv/
+env/
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Models (large files not stored in git) ---
+models/
+*.pt
+*.pth
+
+# --- App Data (exclude CSVs but keep folder) ---
+app/data/*
+!app/data/.gitkeep
+
+# --- Uploads (if any future uploads) ---
+uploads/
+*.tmp
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db

@@ -193,6 +193,12 @@ def get_scan_stats(predictions):
 
 
 def save_prediction(lat, lon, label, confidence, file_path):
+
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        
+
     data = {
         'Latitude': lat,
         'Longitude': lon,
@@ -203,7 +209,15 @@ def save_prediction(lat, lon, label, confidence, file_path):
     
     df = pd.DataFrame([data])
 
-    if os.path.exists(file_path):
-        df.to_csv(file_path, mode='a', header=False, index=False)
-    else:
+    file_exists = os.path.exists(file_path)
+    file_empty = file_exists and os.path.getsize(file_path) == 0
+
+    if not file_exists:
         df.to_csv(file_path, mode='w', header=True, index=False)
+        return
+    
+    if file_empty:
+        df.to_csv(file_path, mode='w', header=True, index=False)
+        return 
+    
+    df.to_csv(file_path, mode='a', header=False, index=False)
