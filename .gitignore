@@ -2,6 +2,7 @@
 app/data/*
 !app/data/.gitkeep
 
+models/*
 !models/.gitkeep
 
 __pycache__/
@@ -23,7 +24,6 @@ logs/
 *.log
 
 # --- Models (large files not stored in git) ---
-models/
 *.pt
 *.pth
 
