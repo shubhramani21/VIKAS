@@ -1,4 +1,6 @@
 # --- Python ---
+app/data/*
+!app/data/.gitkeep
 __pycache__/
 *.pyc
 *.pyo
@@ -22,9 +24,8 @@ models/
 *.pt
 *.pth
 
-# --- App Data (exclude CSVs but keep folder) ---
 app/data/*
-!app/data/.gitkeep
+
 
 # --- Uploads (if any future uploads) ---
 uploads/
