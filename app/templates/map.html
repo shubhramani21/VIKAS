@@ -47,7 +47,14 @@
                         <i class="fas fa-search"></i> Predict
                     </button>
                 </form>
-                <form method="POST" action="{{ url_for('coordinate.delete_coordinate_route') }}">
+                <form method="POST" action="{{ url_for('predict.scan_predictions') }}">
+                    <input type="hidden" name="lat" value="{{ coord.lat }}">
+                    <input type="hidden" name="lon" value="{{ coord.lon }}">
+                    <button type="submit" class="scan-btn">
+                        <i class="fa-solid fa-satellite-dish"></i> Scan
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('coordinate.delete_coordinate') }}">
                     <input type="hidden" name="lat" value="{{ coord.lat }}">
                     <input type="hidden" name="lon" value="{{ coord.lon }}">
                     <button type="submit" class="delete-btn">
@@ -291,6 +298,46 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Handle Scan Area form submission with AJAX
+    $(document).on('submit', 'form[action$="/predict/scan"]', function(e) {
+        e.preventDefault();
+        
+        // Show loading screen
+        document.getElementById('loading-screen').style.display = 'flex';
+        
+        const form = $(this);
+        const button = form.find('.scan-btn');
+        button.prop('disabled', true);
+        button.html('<i class="fas fa-spinner fa-spin"></i> Scanning...');
+
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            success: function(response) {
+                // Handle successful response
+                document.open();
+                document.write(response);
+                document.close();
+            },
+            error: function(xhr) {
+                // Hide loading screen
+                document.getElementById('loading-screen').style.display = 'none';
+                
+                // Re-enable button
+                button.prop('disabled', false);
+                button.html('<i class="fa-solid fa-satellite-dish"></i> Scan');
+                
+                // Show error message
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Scan failed. Please try again.';
+                showFlashMessage(errorMsg, 'error');
+            }
+        });
+    });
+
 });
 </script>
 

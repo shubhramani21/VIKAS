@@ -2,7 +2,8 @@ import os
 import pandas as pd
 from flask import session
 from app.utils.helper import get_response, validate_latlon
-from app.services.prediction_service import run_prediction, run_prediction_batch, coordinates_match
+from app.services.prediction_service import run_prediction, run_prediction_batch, get_scan_coordinates, get_scan_stats
+from app.utils.helper import coordinates_match
 
 class PredictionController:
     MAX_LIMIT = 30
@@ -48,15 +49,14 @@ class PredictionController:
             extras
         )
 
-    
     @staticmethod
-    def predict_batch(model, coords, cfg):
+    def predict_batch(model, coords, cfg, scan=False):
         """Predict all coordinates stored in session"""
         
         if not coords:
             return get_response("No coordinates to predict.", "error", 400)
 
-        if len(coords) >= PredictionController.MAX_LIMIT:
+        if len(coords) >= PredictionController.MAX_LIMIT and not scan:
             return get_response(f"Maximum {PredictionController.MAX_LIMIT} coordinates allowed.", "error", 400)
         
         try:
@@ -74,6 +74,39 @@ class PredictionController:
             200,
             False,
             { "predictions": batch["predictions"] }
+        )
+    
+    @staticmethod
+    def scan_predictions(lat, lon, model,cfg):
+        try:
+            lat, lon = validate_latlon(lat, lon)
+        except ValueError:
+            return get_response("Invalid coordinates.", "error_coordinates", 400)
+
+        try:
+            coords = get_scan_coordinates(lat, lon)
+        except ValueError:
+            return get_response("Failed to generate scan coordinates.", "error", 500)
+        
+        if not coords:
+            return get_response("Failed to generate scan coordinates.", "error", 500)
+        
+        try:
+            batch = run_prediction_batch(model, coords, cfg, sleep_seconds=0.5)
+        except Exception as e:
+            return get_response(f"Failed to run batch prediction. {str(e)}", "error", 500)
+        
+
+        result = batch.get("predictions", [])
+        summary_stats = get_scan_stats(result)
+
+
+        return get_response(
+            "Scan completed",
+            "success",
+            200,
+            False,
+            { "predictions": result, "summary_stats": summary_stats }
         )
     
     @staticmethod
