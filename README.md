@@ -115,8 +115,7 @@ pip install -r requirements.txt
 ### **4️. Install PyTorch (CPU version)**
 
 ```bash
-pip install torch==2.2.0 torchvision==0.17.0 \
-    --index-url https://download.pytorch.org/whl/cpu
+pip install torch==2.2.0 torchvision==0.17.0 \ --index-url https://download.pytorch.org/whl/cpu
 ```
 
 ### **5️. Run the application**
