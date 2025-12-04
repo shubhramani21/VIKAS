@@ -1,8 +1,19 @@
+# --- Web Framework ---
 Flask==3.0.2
 gunicorn==21.2.0
+
+# --- Machine Learning (CPU compatible) ---
+torch==2.2.0+cpu
+torchvision==0.17.0+cpu
 timm==0.9.12
+
+# --- Image Processing ---
 opencv-python==4.9.0.80
 Pillow==10.2.0
+
+# --- Data Processing ---
 pandas==2.2.1
 numpy==1.26.4
+
+# --- HTTP Requests ---
 requests==2.31.0
