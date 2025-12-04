@@ -13,7 +13,7 @@ class Config:
         self.num_classes = 2
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model_name = "resnet18"
-        self.title = "Solar Panel Detection"
+        self.title = "VIKAS"
         self.map_default = {"lat": 34.137470, "lon": 77.571188, "zoom": 12.5}
         self.zoom_level = 18
 
