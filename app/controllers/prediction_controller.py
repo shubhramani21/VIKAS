@@ -124,8 +124,6 @@ class PredictionController:
 
             required = ['latitude', 'longitude', 'label', 'confidence', 'timestamp']
 
-            print(df.columns)
-
             if not all(col in df.columns for col in required):
                 return get_response("Predictions file is corrupted or has invalid format.", "error", 500)
 

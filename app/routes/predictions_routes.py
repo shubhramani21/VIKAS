@@ -81,7 +81,6 @@ def load_history():
     if result.get("type") in ["error", "warning"]:
         flash(result["message"], result["type"])
     
-    print(result)
 
     return render_template(
         'predictions.html',
