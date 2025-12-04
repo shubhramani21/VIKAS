@@ -7,6 +7,44 @@
     background-color: #f9f9f9;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative; /* Reference for absolute positioning */
+}
+
+/* Style the top-left Back to Map button */
+.back-btn.top-left {
+    position: absolute;
+    top: 15px; /* Balanced spacing from top */
+    left: 15px; /* Balanced spacing from left */
+    z-index: 1000; /* Ensure it appears above other elements */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the icon */
+    width: 40px; /* Fixed width for a compact, circular button */
+    height: 40px; /* Fixed height for a circular button */
+    background-color: #007bff; /* Primary blue for consistency */
+    color: #ffffff; /* White icon */
+    text-decoration: none;
+    border-radius: 50%; /* Circular shape */
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Subtle shadow for depth */
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; /* Smooth transitions */
+}
+
+/* Hover effect */
+.back-btn.top-left:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+}
+
+/* Active (click) effect */
+.back-btn.top-left:active {
+    transform: translateY(0); /* Remove lift on click */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reduced shadow on click */
+}
+
+/* Style the icon */
+.back-btn.top-left .fa-solid {
+    font-size: 18px; /* Slightly larger icon for visibility */
 }
 
 /* Heading */
@@ -132,32 +170,46 @@ p {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Back Button */
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background-color: #17a2b8;
-    color: white;
-    border-radius: 6px;
-    text-decoration: none;
-    margin: 20px auto;
-    display: block;
-    width: fit-content;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* Disabled State */
+.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
-.back-btn:hover {
-    background-color: #17a2b8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+/* No Predictions Section */
+.no-predictions {
+    text-align: center;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
 }
 
-.back-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.no-predictions i {
+    font-size: 2rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* Alert Messages */
+.alert {
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 /* Responsive Design */
@@ -185,47 +237,4 @@ p {
         padding: 10px;
         font-size: 0.85rem;
     }
-
-    .back-btn {
-        width: 100%;
-        text-align: center;
-    }
-}
-.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.no-predictions {
-    text-align: center;
-    padding: 2rem;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin: 20px 0;
-}
-
-.no-predictions i {
-    font-size: 2rem;
-    color: #6c757d;
-    margin-bottom: 1rem;
-}
-
-.alert {
-    padding: 10px;
-    border-radius: 4px;
-    margin-top: 1rem;
-}
-
-.alert-error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.alert-success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
 }

@@ -13,6 +13,7 @@ from PIL import Image
 from torchvision import transforms
 
 from app.services.satellite_img_service import get_image
+from app.utils.helper import validate_latlon
 
 
 def image_to_base64(image_np):
@@ -134,6 +135,62 @@ def predict_image(img_np, model, threshold=0.49):
     except Exception as e:
         logging.error(f"Prediction error: {str(e)}", exc_info=True)
         return "Error", 0.0
+
+def get_scan_coordinates(lat, lon):
+    """Get coordinates for scan"""
+    try:
+        lat, lon = validate_latlon(lat, lon)
+    except ValueError:
+        raise ValueError("Invalid latitude or longitude values.")
+    
+    meters_per_degree_lat = 111000
+    meters_per_degree_lon = 111000 * np.cos(np.radians(lat))
+
+    tile_width_m = 333
+    tile_height_m = 177
+
+    tile_width_deg = tile_width_m / meters_per_degree_lon
+    tile_height_deg = tile_height_m / meters_per_degree_lat
+
+    total_width_deg = tile_width_deg * 5  
+    total_height_deg = tile_height_deg * 5
+
+    start_lat = lat - (total_height_deg / 2) + (tile_height_deg / 2)
+    start_lon = lon - (total_width_deg / 2) + (tile_width_deg / 2)
+
+    scan_coords = []
+    for i in range(5):
+        for j in range(5):
+            tile_lat = start_lat + (i * tile_height_deg)
+            tile_lon = start_lon + (j * tile_width_deg)
+            scan_coords.append({"lat": round(tile_lat,6), "lon": round(tile_lon,6)})
+    
+    return scan_coords
+
+
+def get_scan_stats(predictions):
+    """Get scan statistics from predictions list"""
+    solar_count = sum(1 for p in predictions if p.get("label") == "Solar Panel")
+    total_count = len(predictions)
+
+    percentage_solar = round(solar_count / total_count * 100, 2) if total_count > 0 else 0.0
+
+    confidences = [p.get("confidence", 0.0) for p in predictions if p.get("label") == "Solar Panel"]
+    average_confidence = np.mean(confidences) if confidences else 0.0
+
+    confidence_range = f"{min(confidences):.4f} - {max(confidences):.4f}" if confidences else "N/A"
+
+    summary_stats = {
+        "solar_count": solar_count,
+        "total_tiles": total_count,
+        "percentage_solar": percentage_solar,
+        "avg_confidence": average_confidence,
+        "confidence_range": confidence_range
+    }
+
+    return summary_stats
+
+
 
 def save_prediction(lat, lon, label, confidence, file_path):
     data = {

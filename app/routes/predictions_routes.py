@@ -80,6 +80,8 @@ def load_history():
     # Error or warning
     if result.get("type") in ["error", "warning"]:
         flash(result["message"], result["type"])
+    
+    print(result)
 
     return render_template(
         'predictions.html',
@@ -87,12 +89,41 @@ def load_history():
         predictions=result["response"].get("predictions", [])
     )
 
+@prediction_bp.route('/scan', methods=['POST'])
+def scan_predictions():
+    """Scan predictions"""
+    lat = request.form.get('lat')
+    lon = request.form.get('lon')
+
+    model = current_app.model
+    cfg = current_app.config["APP_CONFIG"]
+
+    result = PredictionController.scan_predictions(lat, lon, model, cfg)
+
+    if result.get("type") == "ajax":
+        return _return_json(result.get("response", {}), result.get("status_code"))
+
+    if result.get("type") == "error":
+        flash(result.get("message", "Failed to scan predictions."), "error")
+        return redirect(url_for("pages.map_view"))
+    
+    predictions_results = result.get("response", {}).get("predictions", [])
+    summary_stats = result.get("response", {}).get("summary_stats", {})
+
+    # SUCCESS (normal)
+    return render_template(
+        "scan_results.html",
+        show_sidebar=False,
+        predictions=predictions_results,
+        summary_stats=summary_stats
+    )
+
 @prediction_bp.route('/clear', methods=['POST'])
 def clear_history():
     """Clear all predictions from file"""
     cfg = current_app.config["APP_CONFIG"]
 
-    result = PredictionController.clear_history(cfg, request)
+    result = PredictionController.clear_history(cfg)
 
     flash(result.get("message"), result.get("type"))
 

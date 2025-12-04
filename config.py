@@ -5,7 +5,7 @@ class Config:
     def __init__(self):
         # Use resource_path for all file paths
         self.model_path = resource_path("models/model_final.pth")  # absolute path
-        self.predictions_file = resource_path("data/predictions.csv")  # absolute path
+        self.predictions_file = resource_path("app/data/predictions.csv")  # absolute path
 
         # Rest of your config remains the same
         self.image_size = (224, 224)

@@ -55,13 +55,19 @@ def clear_coordinates_route():
 
 @coordinate_bp.route("/upload", methods=["POST"])
 def upload_coordinates_route():
+    print(request.files)
     if 'csv_file' not in request.files:
+        print('sdfsdfsdfsdfsdfsdfsdfsd')
         flash("No file part in the request.", "error")
         return redirect(url_for("pages.map_view"))
     
 
     csv_file = request.files["csv_file"]
+
+    print("CSV FILE: ",csv_file)
     result = CoordinateController.upload_coordinates(csv_file, request)
+
+    print("RESULT: ",result)
 
     flash(result.get("message"), result.get("type"))
 

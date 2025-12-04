@@ -1,3 +1,14 @@
-\venv
-\__pycache__
-\models
+/.venv
+/__pycache__
+/models
+/app/__pycache__
+/app/controllers/__pycache__
+/app/routes/__pycache__
+/app/static/__pycache__
+/app/templates/__pycache__
+/app/services/__pycache__
+/app/utils/__pycache__
+ml/__pycache__
+
+.vscode
+models

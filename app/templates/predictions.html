@@ -6,9 +6,13 @@
 
 {% block content %}
 <div class="predictions-container">
+    <a href="{{ url_for('pages.map_view') }}" class="back-btn top-left">
+        <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    <!-- Move Back to Map link to top-left -->
+    
     <h1>Prediction History</h1>
     <div class="controls">
-
         <div class="download-container">
             <a href="{{ url_for('predict.download_history') if predictions else '#' }}" 
                class="btn download-btn {% if not predictions %}disabled{% endif %}"
@@ -16,7 +20,6 @@
                 <i class="fas fa-file-csv"></i> Download CSV
             </a>
         </div>
-
         <div class="clear-container">
             <form method="POST" action="{{ url_for('predict.clear_history') if predictions else '#' }}" 
                   onsubmit="return {% if predictions %}confirmClear(){% else %}false{% endif %}">
@@ -26,7 +29,6 @@
                 </button>
             </form>
         </div>
-
     </div>
     {% if predictions %}
     <div class="table-container">
@@ -57,14 +59,8 @@
     <div class="no-predictions">
         <i class="fas fa-exclamation-circle"></i>
         <p>No prediction history found.</p>
-        <!-- {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endwith %} -->
     </div>
     {% endif %}
-    <a href="{{ url_for('pages.map_view') }}" class="back-btn">Back to Map</a>
 </div>
 
 <script>
@@ -72,5 +68,4 @@
         return confirm('Are you sure you want to delete all prediction history? This action cannot be undone!');
     }
 </script>
-
 {% endblock %}

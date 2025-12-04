@@ -54,7 +54,7 @@
                         <i class="fa-solid fa-satellite-dish"></i> Scan
                     </button>
                 </form>
-                <form method="POST" action="{{ url_for('coordinate.delete_coordinate') }}">
+                <form method="POST" action="{{ url_for('coordinate.delete_coordinate_route') }}">
                     <input type="hidden" name="lat" value="{{ coord.lat }}">
                     <input type="hidden" name="lon" value="{{ coord.lon }}">
                     <button type="submit" class="delete-btn">
@@ -198,7 +198,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <i class="fas fa-search"></i> Predict
                                     </button>
                                 </form>
-                                <form method="POST" action="{{ url_for('coordinate.delete_coordinate_route') }}">
+                                <form method="POST" action="{{ url_for('predict.scan_predictions') }}">
+                                    <input type="hidden" name="lat" value="${response.lat}">
+                                    <input type="hidden" name="lon" value="${response.lon}">
+                                    <button type="submit" class="scan-btn">
+                                        <i class="fa-solid fa-satellite-dish"></i></i> Scan
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('coordinate.add_coordinate_route') }}">
                                     <input type="hidden" name="lat" value="${response.lat}">
                                     <input type="hidden" name="lon" value="${response.lon}">
                                     <button type="submit" class="delete-btn">
@@ -340,6 +347,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
-
 
 {% endblock %}

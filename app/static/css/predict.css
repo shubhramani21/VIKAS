@@ -80,7 +80,7 @@
     margin-bottom: 0.5rem;
 }
 
-.back-btn {
+/* .back-btn {
     display: inline-flex;
     align-items: center;
     padding: 0.8rem 1.5rem;
@@ -93,7 +93,7 @@
 
 .back-btn:hover {
     transform: translateY(-2px);
-}
+} */
 
 .no-predictions {
     text-align: center;
@@ -106,6 +106,48 @@
     margin-bottom: 1rem;
 }
 
+/* Ensure the predictions-container is positioned relatively to act as a reference for absolute positioning */
+.predictions-container {
+    position: relative;
+    padding: 20px; /* Adjust as needed */
+}
+
+/* Style the top-left Back to Map button */
+.back-btn.top-left {
+    position: absolute;
+    top: 15px; /* Balanced spacing from top */
+    left: 15px; /* Balanced spacing from left */
+    z-index: 1000; /* Ensure it appears above other elements */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the icon */
+    width: 40px; /* Fixed width for a compact, circular button */
+    height: 40px; /* Fixed height for a circular button */
+    background-color: #007bff; /* Primary blue for consistency */
+    color: #ffffff; /* White icon */
+    text-decoration: none;
+    border-radius: 50%; /* Circular shape */
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Subtle shadow for depth */
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; /* Smooth transitions */
+}
+
+/* Hover effect */
+.back-btn.top-left:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+}
+
+/* Active (click) effect */
+.back-btn.top-left:active {
+    transform: translateY(0); /* Remove lift on click */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reduced shadow on click */
+}
+
+/* Style the icon */
+.back-btn.top-left .fa-solid {
+    font-size: 18px; /* Slightly larger icon for visibility */
+}
 /* Responsive Design */
 @media (max-width: 768px) {
     .predictions-container {

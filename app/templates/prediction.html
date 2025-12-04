@@ -3,6 +3,9 @@
 {% block predict_css %} <link rel="stylesheet" href="{{ url_for('static', filename='css/predict.css') }}"> {% endblock %}
 
 {% block content %}
+<a href="{{ url_for('pages.map_view') }}" class="back-btn top-left">
+    <i class="fa-solid fa-arrow-left"></i>
+</a>
 <div class="predictions-container">
     <h2>Prediction Result</h2>
     
@@ -24,20 +27,11 @@
                 </div>
                 <div class="result-text">
                     <span class="result-label">{{ label }}</span>
-                    <div class="confidence-display">
-                        <span class="confidence-value">Confidence: {{ (confidence * 100)|round(1) }}%</span>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: {{ confidence * 100 }}%"></div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <a href="{{ url_for('pages.map_view') }}" class="back-btn">
-        <i></i> Back to Map
-    </a>
 </div>
 
 
