@@ -1,10 +1,4 @@
 # --- Python ---
-app/data/*
-!app/data/.gitkeep
-
-models/*
-!models/.gitkeep
-
 __pycache__/
 *.pyc
 *.pyo
@@ -23,14 +17,15 @@ env/
 logs/
 *.log
 
-# --- Models (large files not stored in git) ---
-*.pt
-*.pth
-
+# --- App Data (ignore everything except .gitkeep) ---
 app/data/*
+!app/data/.gitkeep
 
+# --- Models folder (track .gitkeep, ignore all files) ---
+models/*
+!models/.gitkeep
 
-# --- Uploads (if any future uploads) ---
+# --- Uploads ---
 uploads/
 *.tmp
 
